@@ -67,6 +67,7 @@ class Board {
     void unmakeMove(Move& m);
 
     bool isLegalMove(Move& m);
+    bool isSquareAttacked(int square, Colour bySide);
 
     uint64_t perft(int depth);  
 
@@ -92,8 +93,7 @@ class Board {
     uint64_t occupancy;
 
     void updateOccupancy();
-    bool isSquareAttacked(int square, Colour bySide);
-
+    
     Colour sideToMove;
     int enPassantSquare;
     uint8_t castlingRights;

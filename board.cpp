@@ -107,9 +107,6 @@ void Board::makeMove(Move& m) {
     // Move piece
     for (int i = 0; i < PIECE_NB; i++) {
 
-        if (i == WK) castlingRights &= ~(WKS | WQS);
-        if (i == BK) castlingRights &= ~(BKS | BQS);
-
         if (i == WK && m.from == 4 && m.to == 6) {
             // Castling so move rook
             bitboards[WR] &= ~(1ULL << 7);
@@ -138,6 +135,9 @@ void Board::makeMove(Move& m) {
             break;
         }
     }
+
+    if (m.from == 4) castlingRights &= ~(WKS | WQS);
+    if (m.from == 60) castlingRights &= ~(BKS | BQS);
 
     if (m.from == 0 || m.to == 0) castlingRights &= ~WQS;
     if (m.from == 7 || m.to == 7) castlingRights &= ~WKS;
@@ -211,10 +211,16 @@ bool Board::isSquareAttacked(int square, Colour bySide) {
     uint64_t pawnBB = bitboards[BP];
     uint64_t knightBB = bitboards[BN]; 
     uint64_t kingBB = bitboards[BK];
+    uint64_t queenBB = bitboards[BQ];
+    uint64_t rookBB = bitboards[BR];
+    uint64_t bishopBB = bitboards[BB];
     if (bySide == WHITE) {
         pawnBB = bitboards[WP];
         knightBB = bitboards[WN];
         kingBB = bitboards[WK];
+        queenBB = bitboards[WQ];
+        rookBB = bitboards[WR];
+        bishopBB = bitboards[WB];
     }
     //uint64_t pawnBB = (bySide == WHITE) ? bitboards[WP] : bitboards[BP];
 
@@ -226,9 +232,13 @@ bool Board::isSquareAttacked(int square, Colour bySide) {
     if (pawnAttacks[bySide^1][square] & pawnBB) return true;
 
     // Knight Check
-    if(knightAttacks[square] & knightBB) return true;
+    if (knightAttacks[square] & knightBB) return true;
 
+    // Bishop Check
+    if (bishopAttacks(square, occupancy) & (bishopBB | queenBB)) return true;
 
+    // Rook Check
+    if (rookAttacks(square, occupancy) & (rookBB | queenBB)) return true;
 
     // King Check
     if (kingAttacks[square] & kingBB) return true;
