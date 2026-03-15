@@ -20,15 +20,30 @@ int main() {
     Board board;
 
     cout << "Perft(1) = " << board.perft(1) << endl;
-    cout << "Perft(2) = " << board.perft(2) << endl;
-    cout << "Perft(3) = " << board.perft(3) << endl;
-    cout << "Perft(4) = " << board.perft(4) << endl;
+    // cout << "Perft(2) = " << board.perft(2) << endl;
+    // cout << "Perft(3) = " << board.perft(3) << endl;
+    // cout << "Perft(4) = " << board.perft(4) << endl;
     // cout << "Perft(5) = " << board.perft(5) << endl;
-    // cout << "Perft(6) = " << board.perft(6) << endl;
+    //cout << "Perft(6) = " << board.perft(6) << endl;
+    cout << "Perft(7) = " << board.perft(7) << endl;
 
     string moveStr;
     while (true) {
+
+        vector<Move> moves = board.generateLegalMoves();
+
         board.printBoard();
+
+        if (moves.empty()) {
+            if (board.isKingInCheck(board.getSideToMove())) {
+                cout << "CHECKMATE" << endl;
+            }
+            else {
+                cout << "STALEMATE" << endl;
+            }
+            break;
+        }
+
         cout << board.getSideToMove() << " to move: ";
         cin >> moveStr;
         if (moveStr == "quit" || moveStr == "q") break;
@@ -41,7 +56,7 @@ int main() {
 
         Move m{from, to};
 
-        if (!board.isLegalMove(m)) {
+        if (!board.isLegalMove(m, moves)) {
             cout << "Move is not a legal chess move" << endl;
         }
         else {

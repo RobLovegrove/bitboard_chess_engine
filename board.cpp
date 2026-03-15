@@ -50,7 +50,7 @@ void Board::init() {
     castlingRights = WKS | WQS | BKS | BQS;
 }
 
-vector<Move> Board::generateMoves() {
+vector<Move> Board::generatePseudoLegalMoves() {
 
     vector<Move> moves;
 
@@ -75,6 +75,30 @@ vector<Move> Board::generateMoves() {
     return moves;
 }
 
+std::vector<Move> Board::generateLegalMoves() {
+    vector<Move> moves = generatePseudoLegalMoves();
+    vector<Move> legalMoves;
+
+    for (Move& m : moves) {
+        makeMove(m); // Will swap colour to move at end of makeMove
+        if (!isKingInCheck(static_cast<Colour>(sideToMove^1))) {
+            legalMoves.push_back(m);
+        }
+        unmakeMove(m);
+    }
+
+    return legalMoves;
+}
+
+bool Board::isKingInCheck(Colour stm) {
+
+    int king = (stm == WHITE) ? WK : BK;
+    uint64_t kingBB = bitboards[king];
+    int kingSq = __builtin_ctzll(kingBB);
+
+    return isSquareAttacked(kingSq, static_cast<Colour>(stm^1));
+}
+
 void Board::makeMove(Move& m) {
 
     uint64_t fromBB = 1ULL << m.from;
@@ -90,7 +114,6 @@ void Board::makeMove(Move& m) {
     else if (m.epSquareToSet != -1) {
         // Double pawn push so setting board.enpassantSquare
         enPassantSquare = m.epSquareToSet;
-
     }
     else {
         // Remove captured piece
@@ -183,8 +206,7 @@ void Board::unmakeMove(Move& m) {
 
 }
 
-bool Board::isLegalMove(Move& move) {
-    auto moves = generateMoves();
+bool Board::isLegalMove(Move& move, vector<Move>& moves) {
 
     for (auto m : moves) {
         if (move.from == m.from && move.to == m.to) {
@@ -253,7 +275,7 @@ uint64_t Board::perft(int depth) {
 
     uint64_t nodes = 0;
 
-    auto moves = generateMoves();
+    auto moves = generateLegalMoves();
 
     for (auto m : moves) {
         makeMove(m);

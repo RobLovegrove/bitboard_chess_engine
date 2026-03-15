@@ -62,12 +62,14 @@ class Board {
     void printBitboard(uint64_t bb) const;
 
     void init();
-    std::vector<Move> generateMoves();
+    std::vector<Move> generatePseudoLegalMoves();
+    std::vector<Move> generateLegalMoves();
     void makeMove(Move& m);
     void unmakeMove(Move& m);
 
-    bool isLegalMove(Move& m);
+    bool isLegalMove(Move& m, std::vector<Move>& moves);
     bool isSquareAttacked(int square, Colour bySide);
+    bool isKingInCheck(Colour sideToMove);
 
     uint64_t perft(int depth);  
 

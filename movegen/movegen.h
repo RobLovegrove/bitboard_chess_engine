@@ -16,7 +16,7 @@ uint64_t slidingAttacks(int sq,
     int dirCount);
 uint64_t rookAttacks(int square, uint64_t occupancy);
 uint64_t bishopAttacks(int square, uint64_t occupancy);
-uint64_t bishopAttacks(int square, uint64_t occupancy);
+uint64_t queenAttacks(int square, uint64_t occupancy);
 
 
 
