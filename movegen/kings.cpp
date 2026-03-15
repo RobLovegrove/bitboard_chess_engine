@@ -38,7 +38,9 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                     if (!board.isSquareAttacked(4, opponent) && 
                         !board.isSquareAttacked(5, opponent) && 
                         !board.isSquareAttacked(6, opponent)) {
-                        moves.push_back(Move(4, 6));
+                            Move m = Move(4,6);
+                            m.isCastling = true;
+                            moves.push_back(m);
                     }
                 }
             }
@@ -49,7 +51,9 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                     if (!board.isSquareAttacked(4, opponent) && 
                         !board.isSquareAttacked(3, opponent) && 
                         !board.isSquareAttacked(2, opponent)) {
-                        moves.push_back(Move(4, 2));
+                            Move m = Move(4,2);
+                            m.isCastling = true;
+                            moves.push_back(m);
                     }
                 }
             }
@@ -62,7 +66,9 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                     if (!board.isSquareAttacked(60, opponent) && 
                         !board.isSquareAttacked(61, opponent) && 
                         !board.isSquareAttacked(62, opponent)) {
-                        moves.push_back(Move(60, 62));
+                            Move m = Move(60,62);
+                            m.isCastling = true;
+                            moves.push_back(m);
                     }
                 }
             }
@@ -73,7 +79,9 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                     if (!board.isSquareAttacked(60, opponent) && 
                         !board.isSquareAttacked(59, opponent) && 
                         !board.isSquareAttacked(58, opponent)) {
-                        moves.push_back(Move(60, 58));
+                            Move m = Move(60,58);
+                            m.isCastling = true;
+                            moves.push_back(m);
                     }
                 }
             }

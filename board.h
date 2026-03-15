@@ -5,9 +5,8 @@
 #include <iostream>
 
 enum PieceType {
-    EMPTY = 0, 
     WP, WR, WN, WB, WQ, WK, BP, BR, BN, BB, BQ, BK,
-    PIECE_NB
+    EMPTY = -1
 };
 
 enum Colour {
@@ -27,6 +26,7 @@ std::ostream& operator<<(std::ostream& os, PieceType p);
 struct Move {
     int from;
     int to;
+    int movedPiece;
     int capturedPiece;
 
     int prevEnpassantSquare = -1;
@@ -38,9 +38,10 @@ struct Move {
     uint8_t prevCastlingRights = 0;
 
     bool isEnpassant = false;
+    bool isCastling = false;
     
     Move(int f, int t, int captured, int epSet, int capturePawn, 
-        int promoPiece, uint8_t prevCastlingRights, bool isEP)
+        int promoPiece, uint8_t prevCastlingRights, bool isEP, bool isC)
     : from(f),
         to(t),
         capturedPiece(captured),
@@ -48,20 +49,21 @@ struct Move {
         epSquareToSet(epSet),
         capturedPawnSquare(capturePawn),
         promotionPiece(promoPiece),
-        isEnpassant(isEP)
+        isEnpassant(isEP),
+        isCastling(isC)
     {}
 
     // Constructor with from/to only
-    Move(int f, int t) : Move(f,t,-1,-1,-1,-1, 0, false) {}
+    Move(int f, int t) : Move(f,t,-1,-1,-1,-1, 0, false, false) {}
 };
 
 class Board {
     public:
-    Board(); 
+    Board(const std::string FEN_string); 
     void printBoard() const;
     void printBitboard(uint64_t bb) const;
 
-    void init();
+    void init(const std::string FEN_string);
     std::vector<Move> generatePseudoLegalMoves();
     std::vector<Move> generateLegalMoves();
     void makeMove(Move& m);
@@ -89,12 +91,13 @@ class Board {
     void setEnPassantSquare(int ePS) {enPassantSquare = ePS; } 
 
     private:
-    uint64_t bitboards[PIECE_NB];               
+    uint64_t bitboards[12];               
     uint64_t whitePieces;
     uint64_t blackPieces;
     uint64_t occupancy;
 
     void updateOccupancy();
+    int charToPiece(char c);
     
     Colour sideToMove;
     int enPassantSquare;

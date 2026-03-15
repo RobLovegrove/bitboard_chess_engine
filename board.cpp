@@ -3,51 +3,82 @@
 #include "./attacks/attacks.h"
 
 #include <iostream>
+#include <sstream>
+
 
 using namespace std;
 
 // Constructor
-Board::Board() {
-    init();
+Board::Board(const string fen) {
+    init(fen);
+
 }
 
 // Initialise standard chess starting position
-void Board::init() {
+void Board::init(const string fen) {
+
+    // Start Position
+    // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
     // Clear all bitboards
     for (int i = 0; i < 12; i++) bitboards[i] = 0ULL;
     whitePieces = blackPieces = occupancy = 0ULL;
 
-    // Pawns
-    bitboards[WP] = 0x000000000000FF00ULL; // Hexidecimal with LSB = A1 on board 
-    bitboards[BP] = 0x00FF000000000000ULL;
+    istringstream ss(fen);
 
-    // Rooks
-    bitboards[WR] = 0x0000000000000081ULL;
-    bitboards[BR] = 0x8100000000000000ULL;
+    string boardPart;
+    string sidePart;
+    string castlingPart;
+    string epPart;
 
-    // Knights
-    bitboards[WN] = 0x0000000000000042ULL;
-    bitboards[BN] = 0x4200000000000000ULL;
+    ss >> boardPart >> sidePart >> castlingPart >> epPart;
 
-    // Bishops
-    bitboards[WB] = 0x0000000000000024ULL;
-    bitboards[BB] = 0x2400000000000000ULL;
+    cout << "boardPart is " << boardPart << endl;
 
-    // Queens
-    bitboards[WQ] = 0x0000000000000008ULL;
-    bitboards[BQ] = 0x0800000000000000ULL;
+    int rank = 7;
+    int file = 0;
 
-    // Kings
-    bitboards[WK] = 0x0000000000000010ULL;
-    bitboards[BK] = 0x1000000000000000ULL;
+    for (char c : boardPart) {
+        if (c == '/') {
+            rank--;
+            file = 0;
+            continue;
+        } 
+        if (isdigit(c)) {
+            file += c - '0';
+        } else {
+            int piece = charToPiece(c);
+            if (piece != EMPTY) {
+                int sq = rank * 8 + file;
+                bitboards[piece] |= 1ULL << sq;
+            }
+            file++;
+        }
+    }
+
+    // side to move
+    sideToMove = (sidePart == "w") ? WHITE : BLACK;
+
+    // castling rights
+    castlingRights = 0;
+
+    if (castlingPart.find('K') != std::string::npos) castlingRights |= WKS;
+    if (castlingPart.find('Q') != std::string::npos) castlingRights |= WQS;
+    if (castlingPart.find('k') != std::string::npos) castlingRights |= BKS;
+    if (castlingPart.find('q') != std::string::npos) castlingRights |= BQS;
+
+    // en passant
+    if (epPart != "-") {
+        int file = epPart[0] - 'a';
+        int rank = epPart[1] - '1';
+        enPassantSquare = rank * 8 + file;
+    }
+    else {
+        enPassantSquare = -1;
+    }
 
     updateOccupancy();
-
-    sideToMove = WHITE;
-    enPassantSquare = -1;
-
-    castlingRights = WKS | WQS | BKS | BQS;
+    
 }
 
 vector<Move> Board::generatePseudoLegalMoves() {
@@ -76,6 +107,7 @@ vector<Move> Board::generatePseudoLegalMoves() {
 }
 
 std::vector<Move> Board::generateLegalMoves() {
+
     vector<Move> moves = generatePseudoLegalMoves();
     vector<Move> legalMoves;
 
@@ -103,8 +135,17 @@ void Board::makeMove(Move& m) {
 
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB = 1ULL << m.to;
+
     m.prevEnpassantSquare = enPassantSquare;
     m.prevCastlingRights = castlingRights;
+
+    // Determine which piece is moving
+    for (int i = 0; i < 12; i++) {
+        if (bitboards[i] & fromBB) {
+            m.movedPiece = i;
+            break;
+        }
+    }
 
     if (m.isEnpassant) {
         // Pawn is being captured by enpassant
@@ -117,7 +158,7 @@ void Board::makeMove(Move& m) {
     }
     else {
         // Remove captured piece
-        for (int i = 0; i < PIECE_NB; i++) {
+        for (int i = 0; i < 12; i++) {
             if (bitboards[i] & toBB) {
                 m.capturedPiece = i;
                 bitboards[i] &= ~toBB;
@@ -127,83 +168,87 @@ void Board::makeMove(Move& m) {
         enPassantSquare = -1; // Capturing piece not double pawn push so clear board enpassant flag
     }
 
-    // Move piece
-    for (int i = 0; i < PIECE_NB; i++) {
-
-        if (i == WK && m.from == 4 && m.to == 6) {
-            // Castling so move rook
+    // Handle castling
+    if (m.isCastling) {
+        if (m.to == 6) { // WK kingside
             bitboards[WR] &= ~(1ULL << 7);
             bitboards[WR] |= (1ULL << 5);
-        }
-        else if (i == WK && m.from == 4 && m.to == 2) {
-            // Castling so move rook
+        } else if (m.to == 2) { // WK queenside
             bitboards[WR] &= ~(1ULL << 0);
             bitboards[WR] |= (1ULL << 3);
-        }
-        else if (i == BK && m.from == 60 && m.to == 62) {
-            // Castling so move rook
+        } else if (m.to == 62) { // BK kingside
             bitboards[BR] &= ~(1ULL << 63);
             bitboards[BR] |= (1ULL << 61);
-        }
-        else if (i == BK && m.from == 60 && m.to == 58) {
-            // Castling so move rook
+        } else if (m.to == 58) { // BK queenside
             bitboards[BR] &= ~(1ULL << 56);
             bitboards[BR] |= (1ULL << 59);
         }
-
-        if (bitboards[i] & fromBB) {
-            bitboards[i] &= ~fromBB;
-            if (m.promotionPiece != -1) bitboards[m.promotionPiece] |= toBB;
-            else { bitboards[i] |= toBB; }
-            break;
-        }
     }
 
+    // Move the piece
+    bitboards[m.movedPiece] &= ~fromBB;
+    if (m.promotionPiece != -1) {
+        bitboards[m.promotionPiece] |= toBB;
+    } else {
+        bitboards[m.movedPiece] |= toBB;
+    }
+
+    // Update castling rights
     if (m.from == 4) castlingRights &= ~(WKS | WQS);
     if (m.from == 60) castlingRights &= ~(BKS | BQS);
-
     if (m.from == 0 || m.to == 0) castlingRights &= ~WQS;
     if (m.from == 7 || m.to == 7) castlingRights &= ~WKS;
     if (m.from == 56 || m.to == 56) castlingRights &= ~BQS;
     if (m.from == 63 || m.to == 63) castlingRights &= ~BKS;
 
     updateOccupancy();
-    sideToMove = static_cast<Colour>(sideToMove ^ 1); // Rasiing to power 1 inverts
+    sideToMove = static_cast<Colour>(sideToMove ^ 1);
 }
 
 void Board::unmakeMove(Move& m) {
 
     uint64_t fromBB = 1ULL << m.from;
-    uint64_t toBB = 1ULL << m.to;
+    uint64_t toBB   = 1ULL << m.to;
 
-    // Move piece back
-    for (int i = 0; i < PIECE_NB; i++) {
-        if (bitboards[i] & toBB) {
-            if (m.promotionPiece != -1) bitboards[m.promotionPiece] &= ~toBB;
-            else { bitboards[i] &= ~toBB; }
-            bitboards[i] |=fromBB;
-            break;
+    // Undo piece movement
+    if (m.promotionPiece != -1) {
+        bitboards[m.promotionPiece] &= ~toBB;
+        bitboards[m.movedPiece] |= fromBB;
+    } else {
+        bitboards[m.movedPiece] &= ~toBB;
+        bitboards[m.movedPiece] |= fromBB;
+    }
+
+    // Undo castling rook moves
+    if (m.isCastling) {
+        if (m.to == 6) { // WK kingside
+            bitboards[WR] &= ~(1ULL << 5);
+            bitboards[WR] |= (1ULL << 7);
+        } else if (m.to == 2) { // WK queenside
+            bitboards[WR] &= ~(1ULL << 3);
+            bitboards[WR] |= (1ULL << 0);
+        } else if (m.to == 62) { // BK kingside
+            bitboards[BR] &= ~(1ULL << 61);
+            bitboards[BR] |= (1ULL << 63);
+        } else if (m.to == 58) { // BK queenside
+            bitboards[BR] &= ~(1ULL << 59);
+            bitboards[BR] |= (1ULL << 56);
         }
     }
 
-    // Undo setting EnPassantSquare
-    enPassantSquare = m.prevEnpassantSquare;
-
-    // Undo Castling rights change
-    castlingRights = m.prevCastlingRights;
-
-    if (m.isEnpassant) {
-        // Restore enpassant captured pawn
-        bitboards[m.capturedPiece] |= 1ULL << m.capturedPawnSquare;
-    }
     // Restore captured piece
-    else if (m.capturedPiece != -1) {
+    if (m.isEnpassant) {
+        bitboards[m.capturedPiece] |= 1ULL << m.capturedPawnSquare;
+    } else if (m.capturedPiece != -1) {
         bitboards[m.capturedPiece] |= toBB;
     }
 
-    updateOccupancy();
-    sideToMove = static_cast<Colour>(sideToMove ^ 1);;
+    // Restore castling rights and en passant square
+    castlingRights = m.prevCastlingRights;
+    enPassantSquare = m.prevEnpassantSquare;
 
+    updateOccupancy();
+    sideToMove = static_cast<Colour>(sideToMove ^ 1);
 }
 
 bool Board::isLegalMove(Move& move, vector<Move>& moves) {
@@ -274,9 +319,7 @@ uint64_t Board::perft(int depth) {
     if (depth == 0) return 1;
 
     uint64_t nodes = 0;
-
     auto moves = generateLegalMoves();
-
     for (auto m : moves) {
         makeMove(m);
         nodes += perft(depth - 1);
@@ -296,7 +339,7 @@ void Board::printBoard() const {
             int sq = rank*8 + file;
             char c = '.';
 
-            for (int p = 1; p <= 12; p++) {
+            for (int p = 0; p < 12; p++) {
                 if (bitboards[p] & (1ULL << sq)) {
                     switch(p) {
                         case WP: c='P'; break;
@@ -330,9 +373,9 @@ void Board::printBitboard(uint64_t bb) const {
             int sq = rank * 8 + file;
             cout << ((bb & (1ULL << sq)) ? "1 " : ". ");
         }
-        cout << std::endl;
+        cout << endl;
     }
-    cout << std::endl;
+    cout << endl;
 }
 
 // Util Functions
@@ -349,6 +392,27 @@ void Board::updateOccupancy() {
     // Occupancy
     occupancy = blackPieces | whitePieces;
 
+}
+
+int Board::charToPiece(char c) {
+    switch (c)
+    {
+        case 'P': return WP;
+        case 'N': return WN;
+        case 'B': return WB;
+        case 'R': return WR;
+        case 'Q': return WQ;
+        case 'K': return WK;
+
+        case 'p': return BP;
+        case 'n': return BN;
+        case 'b': return BB;
+        case 'r': return BR;
+        case 'q': return BQ;
+        case 'k': return BK;
+    }
+
+    return EMPTY;
 }
 
 // Operator Overeloaders
