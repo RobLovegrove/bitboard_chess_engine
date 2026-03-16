@@ -2,8 +2,8 @@
 #include <iomanip>
 #include <string>
 
-#include "../engine/attacks/attacks.h"
-#include "../engine/board/board.h"
+#include "../src/game/attacks/attacks.h"
+#include "../src/game/board/board.h"
 
 using namespace std;
 

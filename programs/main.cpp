@@ -1,6 +1,6 @@
-#include "../engine/board/board.h"
-#include "../engine/attacks/attacks.h"
-#include "../engine/search/search.h"
+#include "../src/game/board/board.h"
+#include "../src/game/attacks/attacks.h"
+#include "../src/search/search.h"
 
 #include <iostream>
 

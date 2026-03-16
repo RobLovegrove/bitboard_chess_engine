@@ -1,5 +1,5 @@
 #pragma once
 
-#include "../board/board.h"
+#include "../game/board/board.h"
 
 int evaluate(Board& board);

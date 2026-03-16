@@ -2,7 +2,7 @@
 # Compiler and flags
 # ------------------------
 CXX = c++
-CXXFLAGS = -std=c++17 -Wall -I.
+CXXFLAGS = -std=c++17 -Wall -I. -Isrc
 
 # ------------------------
 # Directories
@@ -14,7 +14,7 @@ BUILD_DIR := build
 # ------------------------
 # Engine source files (no main)
 # ------------------------
-ENGINE_SRCS := $(shell find engine -name "*.cpp")
+ENGINE_SRCS := $(shell find src -name "*.cpp")
 ENGINE_OBJS := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(ENGINE_SRCS))
 
 # ------------------------
