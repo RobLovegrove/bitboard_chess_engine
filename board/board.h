@@ -23,6 +23,8 @@ enum CastlingRights {
 std::ostream& operator<<(std::ostream& os, Colour c);
 std::ostream& operator<<(std::ostream& os, PieceType p);
 
+std::string squareToString(int sq);
+
 struct Move {
     int from;
     int to;
@@ -39,6 +41,8 @@ struct Move {
 
     bool isEnpassant = false;
     bool isCastling = false;
+
+    Move() {}
     
     Move(int f, int t, int captured, int epSet, int capturePawn, 
         int promoPiece, uint8_t prevCastlingRights, bool isEP, bool isC)
@@ -56,6 +60,8 @@ struct Move {
     // Constructor with from/to only
     Move(int f, int t) : Move(f,t,-1,-1,-1,-1, 0, false, false) {}
 };
+
+std::ostream& operator<<(std::ostream& os, const Move& m);
 
 class Board {
     public:

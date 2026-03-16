@@ -1,6 +1,6 @@
 #include "board.h"
-#include "./movegen/movegen.h"
-#include "./attacks/attacks.h"
+#include "../movegen/movegen.h"
+#include "../attacks/attacks.h"
 
 #include <iostream>
 #include <sstream>
@@ -32,8 +32,6 @@ void Board::init(const string fen) {
     string epPart;
 
     ss >> boardPart >> sidePart >> castlingPart >> epPart;
-
-    cout << "boardPart is " << boardPart << endl;
 
     int rank = 7;
     int file = 0;
@@ -444,5 +442,63 @@ ostream& operator<<(ostream& os, PieceType p) {
 
         default: os << "Unkown"; break;
     }
+    return os;
+}
+
+// Convert square index (0-63) to algebraic notation, e.g., 0 -> a1, 63 -> h8
+string squareToString(int sq) {
+    char file = 'a' + (sq % 8);
+    char rank = '1' + (sq / 8);
+    return string() + file + rank;
+}
+
+// Overload << for Move
+ostream& operator<<(ostream& os, const Move& m) {
+
+    // Castling
+    if (m.isCastling) {
+        if (m.to > m.from) os << "O-O";       // kingside
+        else os << "O-O-O";                   // queenside
+        return os;
+    }
+
+    // Moved piece letter (empty for pawn)
+    string pieceChar;
+    switch (m.movedPiece) {
+        case WN: case BN: pieceChar = "N"; break;
+        case WB: case BB: pieceChar = "B"; break;
+        case WR: case BR: pieceChar = "R"; break;
+        case WQ: case BQ: pieceChar = "Q"; break;
+        case WK: case BK: pieceChar = "K"; break;
+        default: pieceChar = ""; break; // pawns
+    }
+
+    // Capture notation
+    string captureChar = "";
+    if (m.capturedPiece != -1) {
+        captureChar = "x";
+        // For pawns, include the file
+        if (pieceChar.empty()) {
+            char file = 'a' + (m.from % 8);
+            pieceChar = string(1, file);
+        }
+    }
+
+    // Destination square
+    string toSquare = squareToString(m.to);
+
+    // Promotion
+    string promoChar = "";
+    if (m.promotionPiece != -1) {
+        switch(m.promotionPiece) {
+            case WN: case BN: promoChar = "N"; break;
+            case WB: case BB: promoChar = "B"; break;
+            case WR: case BR: promoChar = "R"; break;
+            case WQ: case BQ: promoChar = "Q"; break;
+        }
+    }
+
+    os << pieceChar << captureChar << toSquare << promoChar;
+
     return os;
 }

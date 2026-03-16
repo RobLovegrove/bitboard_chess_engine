@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "../board.h"
+#include "../board/board.h"
 
 std::vector<Move> generatePawnMoves(Board& board, Colour sideToMove);
 std::vector<Move> generateKnightMoves(Board& board, Colour sideToMove);

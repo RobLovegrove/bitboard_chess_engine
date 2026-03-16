@@ -1,8 +1,12 @@
-#include "board.h"
+#include "board/board.h"
 #include "attacks/attacks.h"
+#include "search/search.h"
+
 #include <iostream>
 
 using namespace std;
+
+const string START_POS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 bool parseMove(const string& input, int& from, int& to) {
     if (input.length() != 4) return false;
@@ -17,7 +21,74 @@ int main() {
     initAttacks();
 
     // // Initalise board
-    Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    Board board(START_POS);
+    int depth = 4;
+
+    string sideString;
+    cout << "Would you like to play as WHITE (w) or BLACK (b)? ";
+    cin >> sideString;
+    cout << endl;
+
+    Colour playersColour;
+    if (sideString == "quit" || sideString == "q") return 0;
+    if (sideString == "b" || sideString == "B") {
+        playersColour = BLACK;
+        cout << "You are BLACK!" << endl;
+    } 
+    else if (sideString == "w" || sideString == "W") {
+        playersColour = WHITE;
+        cout << "You are WHITE!" << endl;
+    } 
+    else {
+        cout << "Invalid input! Defaulting to WHITE." << endl;
+        playersColour = WHITE;
+    }
+
+
+    string moveStr;
+    while (true) {
+
+        board.printBoard();
+        vector<Move> moves = board.generateLegalMoves();
+        if (moves.empty()) {
+            if (board.isKingInCheck(board.getSideToMove())) {
+                cout << "CHECKMATE" << endl;
+            }
+            else {
+                cout << "STALEMATE" << endl;
+            }
+            break;
+        }
+        
+        Colour sideToMove = board.getSideToMove();
+
+        if (sideToMove == playersColour) {
+            cout << "It is your move! ";
+            cin >> moveStr;
+            if (moveStr == "quit" || moveStr == "q") break;
+
+            int from, to;
+            if (!parseMove(moveStr, from, to)) {
+                cout << "Invalid input. Use e2e4 format." << endl;
+                continue;
+            }
+
+            Move m{from, to};
+
+            if (!board.isLegalMove(m, moves)) {
+                cout << "Move is not a legal chess move" << endl;
+            }
+            else {
+                board.makeMove(m);
+            }
+        }
+        else {
+            Move bestMove = findBestMove(board, depth);
+            board.makeMove(bestMove);
+            cout << "Your opponent has made their move - " << bestMove << endl;
+        }
+
+    }
 
     // cout << "Perft(1) = " << board.perft(1) << endl;
     // cout << "Perft(2) = " << board.perft(2) << endl;
@@ -56,15 +127,6 @@ int main() {
     // cout << "Perft(5) = " << pos3.perft(5) << endl;
     // cout << "Perft(6) = " << pos3.perft(6) << endl;
 
-    // pos3.printBoard();
-
-    // const uint64_t* bitboards = pos3.getAllBitboards();
-
-    // for (int i = 0; i < 12; i++) {
-    //     cout << "Bitboard for " << static_cast<PieceType>(i) << endl;
-    //     pos3.printBitboard(bitboards[i]);
-    // }
-
     // Board pos4("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
     
     // cout << "pos4 perf testing" << endl;
@@ -85,52 +147,15 @@ int main() {
     // cout << "Perft(5) = " << pos5.perft(5) << endl;
     // cout << "Perft(6) = " << pos5.perft(6) << endl;
 
-    Board pos6("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
+    // Board pos6("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
     
-    cout << "pos6 perf testing" << endl;
-    cout << "Perft(1) = " << pos6.perft(1) << endl;
-    cout << "Perft(2) = " << pos6.perft(2) << endl;
-    cout << "Perft(3) = " << pos6.perft(3) << endl;
-    cout << "Perft(4) = " << pos6.perft(4) << endl;
-    cout << "Perft(5) = " << pos6.perft(5) << endl;
-    cout << "Perft(6) = " << pos6.perft(6) << endl;
+    // cout << "pos6 perf testing" << endl;
+    // cout << "Perft(1) = " << pos6.perft(1) << endl;
+    // cout << "Perft(2) = " << pos6.perft(2) << endl;
+    // cout << "Perft(3) = " << pos6.perft(3) << endl;
+    // cout << "Perft(4) = " << pos6.perft(4) << endl;
+    // cout << "Perft(5) = " << pos6.perft(5) << endl;
+    // cout << "Perft(6) = " << pos6.perft(6) << endl;
 
-    
-    // string moveStr;
-    // while (true) {
-
-    //     vector<Move> moves = board.generateLegalMoves();
-
-    //     board.printBoard();
-
-    //     if (moves.empty()) {
-    //         if (board.isKingInCheck(board.getSideToMove())) {
-    //             cout << "CHECKMATE" << endl;
-    //         }
-    //         else {
-    //             cout << "STALEMATE" << endl;
-    //         }
-    //         break;
-    //     }
-
-    //     cout << board.getSideToMove() << " to move: ";
-    //     cin >> moveStr;
-    //     if (moveStr == "quit" || moveStr == "q") break;
-
-    //     int from, to;
-    //     if (!parseMove(moveStr, from, to)) {
-    //         cout << "Invalid input. Use e2e4 format." << endl;
-    //         continue;
-    //     }
-
-    //     Move m{from, to};
-
-    //     if (!board.isLegalMove(m, moves)) {
-    //         cout << "Move is not a legal chess move" << endl;
-    //     }
-    //     else {
-    //         board.makeMove(m);
-    //     }
-    // }
     return 0;
 }

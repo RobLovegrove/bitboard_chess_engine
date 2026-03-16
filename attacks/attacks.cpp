@@ -1,5 +1,5 @@
 #include "attacks.h"
-#include "../board.h"
+#include "../board/board.h"
 
 uint64_t knightAttacks[64];
 uint64_t kingAttacks[64];

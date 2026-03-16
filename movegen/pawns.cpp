@@ -1,6 +1,6 @@
 #include "movegen.h"
 #include "../attacks/attacks.h"
-#include"../board.h"
+#include"../board/board.h"
 
 #include <cstdint>
 #include <iostream> 
