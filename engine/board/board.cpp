@@ -208,12 +208,13 @@ void Board::unmakeMove(Move& m) {
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB   = 1ULL << m.to;
 
-    // Undo piece movement
+    // Remove piece from destination
+    bitboards[m.movedPiece] &= ~toBB;
+
     if (m.promotionPiece != -1) {
-        bitboards[m.promotionPiece] &= ~toBB;
-        bitboards[m.movedPiece] |= fromBB;
+        bitboards[m.promotionPiece] &= ~toBB; // Remove promoted piece
+        bitboards[m.movedPiece] |= fromBB;   // Restore original pawn
     } else {
-        bitboards[m.movedPiece] &= ~toBB;
         bitboards[m.movedPiece] |= fromBB;
     }
 
@@ -259,7 +260,7 @@ bool Board::isLegalMove(Move& move, vector<Move>& moves) {
             }
             string answer;
             cout << "Would you like to promote to a ";
-            cout << static_cast<PieceType>(m.promotionPiece) << ": (y/n)";
+            cout << static_cast<PieceType>(m.promotionPiece) << ": (y/n) ";
             cin >> answer;
             if (answer == "y" || answer == "yes") {
                 move = m;

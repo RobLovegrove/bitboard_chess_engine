@@ -1,6 +1,6 @@
-#include "board/board.h"
-#include "attacks/attacks.h"
-#include "search/search.h"
+#include "../engine//board/board.h"
+#include "../engine//attacks/attacks.h"
+#include "../engine//search/search.h"
 
 #include <iostream>
 
@@ -22,73 +22,11 @@ int main() {
 
     // // Initalise board
     Board board(START_POS);
-    int depth = 4;
 
-    string sideString;
-    cout << "Would you like to play as WHITE (w) or BLACK (b)? ";
-    cin >> sideString;
-    cout << endl;
-
-    Colour playersColour;
-    if (sideString == "quit" || sideString == "q") return 0;
-    if (sideString == "b" || sideString == "B") {
-        playersColour = BLACK;
-        cout << "You are BLACK!" << endl;
-    } 
-    else if (sideString == "w" || sideString == "W") {
-        playersColour = WHITE;
-        cout << "You are WHITE!" << endl;
-    } 
-    else {
-        cout << "Invalid input! Defaulting to WHITE." << endl;
-        playersColour = WHITE;
-    }
-
-
-    string moveStr;
-    while (true) {
-
-        board.printBoard();
-        vector<Move> moves = board.generateLegalMoves();
-        if (moves.empty()) {
-            if (board.isKingInCheck(board.getSideToMove())) {
-                cout << "CHECKMATE" << endl;
-            }
-            else {
-                cout << "STALEMATE" << endl;
-            }
-            break;
-        }
-        
-        Colour sideToMove = board.getSideToMove();
-
-        if (sideToMove == playersColour) {
-            cout << "It is your move! ";
-            cin >> moveStr;
-            if (moveStr == "quit" || moveStr == "q") break;
-
-            int from, to;
-            if (!parseMove(moveStr, from, to)) {
-                cout << "Invalid input. Use e2e4 format." << endl;
-                continue;
-            }
-
-            Move m{from, to};
-
-            if (!board.isLegalMove(m, moves)) {
-                cout << "Move is not a legal chess move" << endl;
-            }
-            else {
-                board.makeMove(m);
-            }
-        }
-        else {
-            Move bestMove = findBestMove(board, depth);
-            board.makeMove(bestMove);
-            cout << "Your opponent has made their move - " << bestMove << endl;
-        }
-
-    }
+    cout << "Performance Testing - Depth 1" << endl;
+    long long result = board.perft(1);
+    cout << "Starting position:\nTarget = 20    Result = ";
+    cout << result << ((result == 20) ? " ✅" : " ❌") << endl;
 
     // cout << "Perft(1) = " << board.perft(1) << endl;
     // cout << "Perft(2) = " << board.perft(2) << endl;
