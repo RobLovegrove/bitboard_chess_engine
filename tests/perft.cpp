@@ -1,99 +1,80 @@
-#include "../engine//board/board.h"
-#include "../engine//attacks/attacks.h"
-#include "../engine//search/search.h"
-
 #include <iostream>
+#include <iomanip>
+#include <string>
+
+#include "../engine/attacks/attacks.h"
+#include "../engine/board/board.h"
 
 using namespace std;
 
-const string START_POS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-bool parseMove(const string& input, int& from, int& to) {
-    if (input.length() != 4) return false;
-    from = (input[1] - '1') * 8 + (input[0] - 'a');
-    to   = (input[3] - '1') * 8 + (input[2] - 'a');
-    return true;
-}
+struct PerftTest {
+    string name;
+    Board position;
+    long long targets[6]; // targets for depths 1..6
+};
 
 int main() {
 
     // Initialise attack look up tables
     initAttacks();
 
-    // // Initalise board
-    Board board(START_POS);
+    // -----------------------------
+    // Initialize boards
+    // -----------------------------
+    Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    Board kiwipete("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+    Board pos3("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
+    Board pos4("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+    Board pos5("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
+    Board pos6("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 
-    cout << "Performance Testing - Depth 1" << endl;
-    long long result = board.perft(1);
-    cout << "Starting position:\nTarget = 20    Result = ";
-    cout << result << ((result == 20) ? " ✅" : " ❌") << endl;
+    cout << board.perft(1) << endl;
 
-    // cout << "Perft(1) = " << board.perft(1) << endl;
-    // cout << "Perft(2) = " << board.perft(2) << endl;
-    // cout << "Perft(3) = " << board.perft(3) << endl;
-    // cout << "Perft(4) = " << board.perft(4) << endl;
-    // cout << "Perft(5) = " << board.perft(5) << endl;
-    // //cout << "Perft(6) = " << board.perft(6) << endl;
-    // //cout << "Perft(7) = " << board.perft(7) << endl;
+    // -----------------------------
+    // Setup test positions and targets
+    // -----------------------------
+    PerftTest tests[] = {
+        {"Starting position", board, {20, 400, 8902, 197281, 4865609, 119060324}},
+        {"Kiwipete", kiwipete, {48, 2039, 97862, 4085603, 193690690, 8031647685}},
+        {"Position 3", pos3, {14, 191, 2812, 43238, 674624, 11030083}},
+        {"Position 4", pos4, {6, 264, 9467, 422333, 15833292, 706045033}},
+        {"Position 5", pos5, {44, 1486, 62379, 2103487, 89941194, -1}},
+        {"Position 6", pos6, {46, 2079, 89890, 3894594, 164075551, 6923051137}}
+    };
 
-    // Board kiwipete("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-    
-    // cout << "kiwipete perf testing" << endl;
-    // cout << "Perft(1) = " << kiwipete.perft(1) << endl;
-    // cout << "Perft(2) = " << kiwipete.perft(2) << endl;
-    // cout << "Perft(3) = " << kiwipete.perft(3) << endl;
-    // cout << "Perft(4) = " << kiwipete.perft(4) << endl;
-    // cout << "Perft(5) = " << kiwipete.perft(5) << endl;
-    // cout << "Perft(6) = " << kiwipete.perft(6) << endl;
+    const int maxDepth = 6;
 
-    // kiwipete.printBoard();
+    cout << "\nPerformance Testing - Depths 1-" << maxDepth << "\n" << endl;
 
-    // const uint64_t* bitboards = kiwipete.getAllBitboards();
+    for (int depth = 1; depth <= maxDepth; ++depth) {
+        cout << "Depth " << depth << ":\n";
+        cout << left << setw(20) << "Position"
+             << setw(12) << "Target"
+             << setw(12) << "Result"
+             << "Status\n";
+        cout << string(50, '-') << endl;
 
-    // for (int i = 0; i < 12; i++) {
-    //     cout << "Bitboard for " << static_cast<PieceType>(i) << endl;
-    //     kiwipete.printBitboard(bitboards[i]);
-    // }
+        for (auto &t : tests) {
+            long long result = t.position.perft(depth);
+            long long target = t.targets[depth - 1];
 
-    // Board pos3("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
-    
-    // cout << "pos3 perf testing" << endl;
-    // cout << "Perft(1) = " << pos3.perft(1) << endl;
-    // cout << "Perft(2) = " << pos3.perft(2) << endl;
-    // cout << "Perft(3) = " << pos3.perft(3) << endl;
-    // cout << "Perft(4) = " << pos3.perft(4) << endl;
-    // cout << "Perft(5) = " << pos3.perft(5) << endl;
-    // cout << "Perft(6) = " << pos3.perft(6) << endl;
+            if (target == -1) {
+                cout << left << setw(20) << t.name
+                     << setw(12) << "-"
+                    << setw(12) << "-"
+                    << "SKIPPED\n";
+                continue;
+            }
 
-    // Board pos4("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
-    
-    // cout << "pos4 perf testing" << endl;
-    // cout << "Perft(1) = " << pos4.perft(1) << endl;
-    // cout << "Perft(2) = " << pos4.perft(2) << endl;
-    // cout << "Perft(3) = " << pos4.perft(3) << endl;
-    // cout << "Perft(4) = " << pos4.perft(4) << endl;
-    // cout << "Perft(5) = " << pos4.perft(5) << endl;
-    // cout << "Perft(6) = " << pos4.perft(6) << endl;
+            cout << left << setw(20) << t.name
+                 << setw(12) << target
+                 << setw(12) << result
+                 << ((result == target) ? "✅" : "❌") << endl;
+        }
 
-    // Board pos5("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
-    
-    // cout << "pos5 perf testing" << endl;
-    // cout << "Perft(1) = " << pos5.perft(1) << endl;
-    // cout << "Perft(2) = " << pos5.perft(2) << endl;
-    // cout << "Perft(3) = " << pos5.perft(3) << endl;
-    // cout << "Perft(4) = " << pos5.perft(4) << endl;
-    // cout << "Perft(5) = " << pos5.perft(5) << endl;
-    // cout << "Perft(6) = " << pos5.perft(6) << endl;
-
-    // Board pos6("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
-    
-    // cout << "pos6 perf testing" << endl;
-    // cout << "Perft(1) = " << pos6.perft(1) << endl;
-    // cout << "Perft(2) = " << pos6.perft(2) << endl;
-    // cout << "Perft(3) = " << pos6.perft(3) << endl;
-    // cout << "Perft(4) = " << pos6.perft(4) << endl;
-    // cout << "Perft(5) = " << pos6.perft(5) << endl;
-    // cout << "Perft(6) = " << pos6.perft(6) << endl;
+        cout << string(50, '-') << endl;
+        cout << "\n";
+    }
 
     return 0;
 }
