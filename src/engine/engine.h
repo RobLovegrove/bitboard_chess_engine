@@ -1,0 +1,38 @@
+#pragma once
+
+#include <string>
+#include "../game/board/board.h"
+
+class Engine {
+public:
+    Engine();
+
+    // Start a new game
+    void newGame();
+
+    // Set position
+    void setStartPos(const std::string& fenString);
+
+    void newGameWithFEN(const std::string& fenString);
+
+    // Play a move on the board
+    void makeMove(const std::string& moveStr);
+
+    bool parseMove(const std::string& input, int& from, int& to);
+
+    bool isGameOver(std::string& result); 
+
+    void printBoard() { board.printBoard(); }
+
+    Colour getSideToMove() { return board.getSideToMove(); }
+
+    // Search for best move
+    std::string searchBestMove(int depth);
+
+    // Access board (useful for debugging / tests)
+    const Board& getBoard() const;
+
+private:
+    std::string startPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    Board board;
+};

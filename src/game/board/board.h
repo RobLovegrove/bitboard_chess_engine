@@ -62,6 +62,7 @@ struct Move {
 };
 
 std::ostream& operator<<(std::ostream& os, const Move& m);
+std::string moveToSAN(const Move& m);
 
 class Board {
     public:

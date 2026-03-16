@@ -60,10 +60,12 @@ void Board::init(const string fen) {
     // castling rights
     castlingRights = 0;
 
-    if (castlingPart.find('K') != std::string::npos) castlingRights |= WKS;
-    if (castlingPart.find('Q') != std::string::npos) castlingRights |= WQS;
-    if (castlingPart.find('k') != std::string::npos) castlingRights |= BKS;
-    if (castlingPart.find('q') != std::string::npos) castlingRights |= BQS;
+    if (castlingPart != "-") {
+        if (castlingPart.find('K') != std::string::npos) castlingRights |= WKS;
+        if (castlingPart.find('Q') != std::string::npos) castlingRights |= WQS;
+        if (castlingPart.find('k') != std::string::npos) castlingRights |= BKS;
+        if (castlingPart.find('q') != std::string::npos) castlingRights |= BQS;
+    }
 
     // en passant
     if (epPart != "-") {
@@ -75,8 +77,7 @@ void Board::init(const string fen) {
         enPassantSquare = -1;
     }
 
-    updateOccupancy();
-    
+    updateOccupancy();    
 }
 
 vector<Move> Board::generatePseudoLegalMoves() {
@@ -455,12 +456,37 @@ string squareToString(int sq) {
 
 // Overload << for Move
 ostream& operator<<(ostream& os, const Move& m) {
+    os << squareToString(m.from)
+       << squareToString(m.to);
+
+    // promotion
+    if (m.promotionPiece != -1) {
+        char promo;
+
+        switch (m.promotionPiece) {
+            case WN: case BN: promo = 'n'; break;
+            case WB: case BB: promo = 'b'; break;
+            case WR: case BR: promo = 'r'; break;
+            case WQ: case BQ: promo = 'q'; break;
+            default: promo = 'q';
+        }
+
+        os << promo;
+    }
+
+    return os;
+}
+
+string moveToSAN(const Move& m) {
+
+    stringstream os;
+    string san;
 
     // Castling
     if (m.isCastling) {
         if (m.to > m.from) os << "O-O";       // kingside
         else os << "O-O-O";                   // queenside
-        return os;
+        return os.str();
     }
 
     // Moved piece letter (empty for pawn)
@@ -501,5 +527,5 @@ ostream& operator<<(ostream& os, const Move& m) {
 
     os << pieceChar << captureChar << toSquare << promoChar;
 
-    return os;
+    return os.str();
 }
