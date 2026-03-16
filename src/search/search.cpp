@@ -26,7 +26,6 @@ int negamax(Board& board, int depth, int alpha, int beta) {
 
         if (alpha >= beta) break;
     }
-
     return bestScore;
 }
 
@@ -34,7 +33,7 @@ Move findBestMove(Board& board, int depth) {
 
     vector<Move> moves = board.generateLegalMoves();
 
-    Move bestMove;
+    Move bestMove = moves[0];
     int bestScore = -INF;
 
     for (Move move : moves) {
@@ -50,6 +49,5 @@ Move findBestMove(Board& board, int depth) {
         }
         
     }
-
     return bestMove;
 }

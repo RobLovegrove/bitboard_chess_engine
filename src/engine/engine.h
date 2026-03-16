@@ -10,15 +10,12 @@ public:
     // Start a new game
     void newGame();
 
-    // Set position
-    void setStartPos(const std::string& fenString);
-
     void newGameWithFEN(const std::string& fenString);
 
     // Play a move on the board
     void makeMove(const std::string& moveStr);
 
-    bool parseMove(const std::string& input, int& from, int& to);
+    bool parseMove(const std::string& input, int& from, int& to, int& p);
 
     bool isGameOver(std::string& result); 
 
@@ -35,4 +32,5 @@ public:
 private:
     std::string startPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     Board board;
+    int charToPiece(char c);
 };
