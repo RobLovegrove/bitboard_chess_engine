@@ -99,6 +99,10 @@ string Engine::searchBestMove(int depth) {
     return ss.str();
 }
 
+void Engine::stopSearch() {
+    
+}
+
 const Board& Engine::getBoard() const {
     return board;
 }

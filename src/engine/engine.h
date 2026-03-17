@@ -25,6 +25,7 @@ public:
 
     // Search for best move
     std::string searchBestMove(int depth);
+    void stopSearch();
 
     // Access board (useful for debugging / tests)
     const Board& getBoard() const;

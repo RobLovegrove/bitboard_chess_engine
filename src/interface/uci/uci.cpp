@@ -1,6 +1,6 @@
 #include "uci.h"
-#include "../engine/engine.h"
-#include "../game/attacks/attacks.h"
+#include "../../engine/engine.h"
+#include "../../game/attacks/attacks.h"
 
 #include <iostream>
 #include <sstream>
@@ -30,6 +30,9 @@ void uciLoop() {
         else if (cmd == "isready") {
             cout << "readyok" << endl;
         }
+        else if (cmd == "ucinewgame") {
+            engine.newGame();
+        }
         else if (cmd == "position") {
             string type;
             iss >> type;
@@ -38,8 +41,14 @@ void uciLoop() {
                 engine.newGame();
             } 
             else if (type == "fen") {
-                string fen, part;
-                while (iss >> part) fen += part + " ";
+                string fen = "";
+                string part;
+
+                for (int i = 0; i < 6; i++) {
+                    iss >> part;
+                    fen += part + " ";
+                }
+
                 engine.newGameWithFEN(fen);
             }
 
@@ -54,9 +63,20 @@ void uciLoop() {
             }
         }
         else if (cmd == "go") {
-            int depth = 4; // fixed depth for minimal version
+            int depth = 4;
+            string token;
+
+            while (iss >> token) {
+                if (token == "depth") {
+                    iss >> depth;
+                }
+            }
+
             string best = engine.searchBestMove(depth);
             cout << "bestmove " << best << endl;
+        }
+        else if (cmd == "stop") {
+            engine.stopSearch();
         }
         else if (cmd == "quit") {
             break;

@@ -1,5 +1,5 @@
 #include "../src/engine/engine.h"
-#include "../src/uci/uci.h"
+#include "../src/interface/uci/uci.h"
 
 #include <iostream>
 
