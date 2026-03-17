@@ -1,5 +1,9 @@
 # Ignore macOS system files
 .DS_Store
+
 # Ignore compiled executables
 build/
 *.o
+
+# Ignore debug files
+*.txt
