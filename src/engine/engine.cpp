@@ -97,10 +97,8 @@ string Engine::searchBestMove(int maxDepth) {
     Move bestMove = Move::null();
 
     for (int depth = 1; depth <= maxDepth; depth++) {
-        if (stop) break;
-
+        if (stop && depth > 1) break;
         Move currentBest = findBestMove(board, depth, stop);
-        
         if (!currentBest.isNull()) bestMove = currentBest;
     }
 

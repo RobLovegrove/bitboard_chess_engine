@@ -45,7 +45,7 @@ Move findBestMove(Board& board, int depth, bool& stop) {
 
     for (Move move : moves) {
 
-        if (stop) break;
+        if (stop) return bestMove;
 
         board.makeMove(move);
 
