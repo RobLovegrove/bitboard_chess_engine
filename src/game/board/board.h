@@ -59,6 +59,14 @@ struct Move {
 
     // Constructor with from/to only
     Move(int f, int t) : Move(f,t,-1,-1,-1,-1, 0, false, false) {}
+
+    static Move null() {
+        return Move(-1,-1);
+    }
+
+    bool isNull() const {
+        return from == -1 && to == -1;
+    }
 };
 
 std::ostream& operator<<(std::ostream& os, const Move& m);
@@ -66,8 +74,11 @@ std::string moveToSAN(const Move& m);
 
 class Board {
     public:
-    Board(const std::string FEN_string); 
+    Board();
+    Board(const std::string FEN_string);
+
     void printBoard() const;
+    std::string printBoardToString() const;
     void printBitboard(uint64_t bb) const;
 
     void init(const std::string FEN_string);

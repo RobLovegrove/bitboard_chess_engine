@@ -6,8 +6,9 @@
 
 using namespace std;
 
-Engine::Engine() : board(startPos) {
+Engine::Engine() {
     initAttacks();
+    board = Board(startPos);
 }
 
 void Engine::newGame() {
@@ -79,28 +80,39 @@ void Engine::makeMove(const string& moveStr) {
 
     for (auto& m : legalMoves) {
         if (m.from == move.from && m.to == move.to) {
+            m.promotionPiece = move.promotionPiece;
             board.makeMove(m);
             return;
         }
     }
 
-    // string error = "Illegal move by " + board.getSideToMove() + moveStr
     string colour = (board.getSideToMove() == WHITE) ? "WHITE" : "BLACK";
     throw runtime_error("Illegal move by " + colour + ": " + moveStr);
 }
 
-string Engine::searchBestMove(int depth) {
+string Engine::searchBestMove(int maxDepth) {
 
-    Move bestMove = findBestMove(board, depth);
+    stop = false;
 
+    Move bestMove = Move::null();
+
+    for (int depth = 1; depth <= maxDepth; depth++) {
+        if (stop) break;
+
+        Move currentBest = findBestMove(board, depth, stop);
+        
+        if (!currentBest.isNull()) bestMove = currentBest;
+    }
+
+    if (bestMove.isNull()) return "0000";
+    
     stringstream ss;
     ss << bestMove;
-
     return ss.str();
 }
 
 void Engine::stopSearch() {
-    
+    stop = true;
 }
 
 const Board& Engine::getBoard() const {

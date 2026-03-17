@@ -6,10 +6,14 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
 void uciLoop() {
+
+    ofstream debugLog("/Users/rob/Documents/CS/Chess/chess_engine/debug.txt", ios::app);
+
     Engine engine;
     initAttacks();
 
@@ -58,12 +62,14 @@ void uciLoop() {
             if (movesWord == "moves") {
                 string moveStr;
                 while (iss >> moveStr) {
+                    debugLog << "Opponent Move: " << moveStr << endl;
+                    debugLog.flush();
                     engine.makeMove(moveStr);
                 }
             }
         }
         else if (cmd == "go") {
-            int depth = 4;
+            int depth = 5;
             string token;
 
             while (iss >> token) {
@@ -73,6 +79,10 @@ void uciLoop() {
             }
 
             string best = engine.searchBestMove(depth);
+            debugLog << "Engine Move: " << best << endl;
+            string boardString = engine.printBoardToString();
+            debugLog << boardString << endl;
+            debugLog.flush();
             cout << "bestmove " << best << endl;
         }
         else if (cmd == "stop") {

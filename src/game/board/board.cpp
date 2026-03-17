@@ -5,13 +5,17 @@
 #include <iostream>
 #include <sstream>
 
-
 using namespace std;
 
+const string START_POS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 // Constructor
+Board::Board() {
+    init(START_POS);
+}
+
 Board::Board(const string fen) {
     init(fen);
-
 }
 
 // Initialise standard chess starting position
@@ -365,6 +369,50 @@ void Board::printBoard() const {
     }
     cout << horizontal_border << endl;
     cout << "    A   B   C   D   E   F   G   H " << endl << endl;        
+}
+
+// ASCII board printing
+string Board::printBoardToString() const {
+
+    stringstream os;
+
+    const char* horizontal_border = "  +---+---+---+---+---+---+---+---+";
+
+    for (int rank = 7; rank >=0; rank--) {
+        os << horizontal_border << endl;
+        os << rank+1 << " |";
+        for (int file = 0; file < 8; ++file) {
+            int sq = rank*8 + file;
+            char c = '.';
+
+            for (int p = 0; p < 12; p++) {
+                if (bitboards[p] & (1ULL << sq)) {
+                    switch(p) {
+                        case WP: c='P'; break;
+                        case WN: c='N'; break;
+                        case WB: c='B'; break;
+                        case WR: c='R'; break;
+                        case WQ: c='Q'; break;
+                        case WK: c='K'; break;
+                        case BP: c='p'; break;
+                        case BN: c='n'; break;
+                        case BB: c='b'; break;
+                        case BR: c='r'; break;
+                        case BQ: c='q'; break;
+                        case BK: c='k'; break;
+                    }
+                    break;
+                }
+            }
+
+            os << " " << c << " |";
+        }
+        os << endl;
+    }
+    os << horizontal_border << endl;
+    os << "    A   B   C   D   E   F   G   H " << endl << endl;   
+    
+    return os.str();
 }
 
 void Board::printBitboard(uint64_t bb) const {

@@ -20,6 +20,7 @@ public:
     bool isGameOver(std::string& result); 
 
     void printBoard() { board.printBoard(); }
+    std::string printBoardToString() { return board.printBoardToString(); }
 
     Colour getSideToMove() { return board.getSideToMove(); }
 
@@ -31,7 +32,10 @@ public:
     const Board& getBoard() const;
 
 private:
-    std::string startPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     Board board;
+    bool stop = false;
+
+    std::string startPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    
     int charToPiece(char c);
 };
