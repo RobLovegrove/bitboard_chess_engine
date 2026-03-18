@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <assert.h>
 
 using namespace std;
 
@@ -34,8 +35,10 @@ void Board::init(const string fen) {
     string sidePart;
     string castlingPart;
     string epPart;
+    string halfmovePart;
+    string fullmovePart;
 
-    ss >> boardPart >> sidePart >> castlingPart >> epPart;
+    ss >> boardPart >> sidePart >> castlingPart >> epPart >> halfmovePart >> fullmovePart;
 
     int rank = 7;
     int file = 0;
@@ -81,6 +84,10 @@ void Board::init(const string fen) {
         enPassantSquare = -1;
     }
 
+    halfmove = stoi(halfmovePart);
+
+    fullmove = stoi(fullmovePart);
+
     updateOccupancy();    
 }
 
@@ -105,7 +112,6 @@ vector<Move> Board::generatePseudoLegalMoves() {
 
     auto queenMoves = generateQueenMoves(*this, sideToMove);
     moves.insert(moves.end(), queenMoves.begin(), queenMoves.end()); 
-
     return moves;
 }
 
@@ -136,26 +142,32 @@ bool Board::isKingInCheck(Colour stm) {
 
 void Board::makeMove(Move& m) {
 
+    if (sideToMove == BLACK) fullmove++; 
+    m.prevHalfmove = halfmove;
+    halfmove++;
+    ply++;
+
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB = 1ULL << m.to;
 
     m.prevEnpassantSquare = enPassantSquare;
     m.prevCastlingRights = castlingRights;
 
+    enPassantSquare = -1; 
     if (m.isEnpassant) {
         // Pawn is being captured by enpassant
         bitboards[m.capturedPiece] &= ~(1ULL << m.capturedPawnSquare);
         enPassantSquare = -1; 
+        halfmove = 0;
     }
     else if (m.epSquareToSet != -1) {
         // Double pawn push so setting board.enpassantSquare
         enPassantSquare = m.epSquareToSet;
+        halfmove = 0;
     }
-    else {
-        if (m.capturedPiece != -1) {
-            bitboards[m.capturedPiece] &= ~toBB;
-        }
-        enPassantSquare = -1; // Capturing piece not double pawn push so clear board enpassant flag
+    else if (m.capturedPiece != -1) {
+        bitboards[m.capturedPiece] &= ~toBB;
+        halfmove = 0;
     }
 
     // Handle castling
@@ -176,11 +188,16 @@ void Board::makeMove(Move& m) {
     }
 
     // Move the piece
+    assert(bitboards[m.movedPiece] & fromBB);
     bitboards[m.movedPiece] &= ~fromBB;
     if (m.promotionPiece != -1) {
         bitboards[m.promotionPiece] |= toBB;
     } else {
         bitboards[m.movedPiece] |= toBB;
+    }
+
+    if (m.movedPiece == WP || m.movedPiece == BP) {
+        halfmove = 0;
     }
 
     // Update castling rights
@@ -197,6 +214,11 @@ void Board::makeMove(Move& m) {
 
 void Board::unmakeMove(Move& m) {
 
+    sideToMove = static_cast<Colour>(sideToMove ^ 1);
+    if (sideToMove == BLACK) fullmove--;
+    halfmove = m.prevHalfmove;
+    ply--;
+
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB   = 1ULL << m.to;
 
@@ -204,9 +226,10 @@ void Board::unmakeMove(Move& m) {
     bitboards[m.movedPiece] &= ~toBB;
 
     if (m.promotionPiece != -1) {
-        bitboards[m.promotionPiece] &= ~toBB; // Remove promoted piece
-        bitboards[m.movedPiece] |= fromBB;   // Restore original pawn
-    } else {
+        bitboards[m.promotionPiece] &= ~toBB; // remove promoted piece
+        bitboards[m.movedPiece] |= fromBB;    // restore pawn
+    } 
+    else {
         bitboards[m.movedPiece] |= fromBB;
     }
 
@@ -239,7 +262,6 @@ void Board::unmakeMove(Move& m) {
     enPassantSquare = m.prevEnpassantSquare;
 
     updateOccupancy();
-    sideToMove = static_cast<Colour>(sideToMove ^ 1);
 }
 
 bool Board::isLegalMove(Move& move, vector<Move>& moves) {

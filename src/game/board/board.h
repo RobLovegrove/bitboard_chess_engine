@@ -31,6 +31,8 @@ struct Move {
     int movedPiece;
     int capturedPiece;
 
+    int prevHalfmove;
+
     int prevEnpassantSquare = -1;
     int epSquareToSet = -1;
     int capturedPawnSquare = -1;
@@ -44,12 +46,13 @@ struct Move {
 
     Move() {}
     
-    Move(int f, int t, int movedpiece, int captured, int epSet, int capturePawn, 
+    Move(int f, int t, int movedpiece, int captured, int prevHalfmove, int epSet, int capturePawn, 
         int promoPiece, uint8_t prevCastlingRights, bool isEP, bool isC)
     : from(f),
         to(t),
         movedPiece(movedpiece),
         capturedPiece(captured),
+        prevHalfmove(prevHalfmove),
         prevEnpassantSquare(-1),
         epSquareToSet(epSet),
         capturedPawnSquare(capturePawn),
@@ -59,7 +62,7 @@ struct Move {
     {}
 
     // Constructor with from/to only
-    Move(int f, int t) : Move(f,t,-1, -1,-1,-1,-1, 0, false, false) {}
+    Move(int f, int t) : Move(f,t,-1, -1, 0, -1,-1,-1, 0, false, false) {}
 
     static Move null() {
         return Move(-1,-1);
@@ -115,6 +118,10 @@ class Board {
     uint64_t whitePieces;
     uint64_t blackPieces;
     uint64_t occupancy;
+
+    int halfmove;
+    int fullmove;
+    int ply;
 
     void updateOccupancy();
     int charToPiece(char c);

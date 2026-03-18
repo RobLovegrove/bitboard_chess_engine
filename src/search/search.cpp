@@ -20,20 +20,18 @@ int negamax(Board& board, int depth, int alpha, int beta, bool& stop) {
         else { return 0; }
     }
 
-    sort(moves.begin(), moves.end(), [](Move a, Move b) {
-        if (a.capturedPiece != -1 || b.capturedPiece != -1)
-            return mvvLvaScore(a) > mvvLvaScore(b);
-        return false; // keep original order for non-captures
+    sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
+        return mvvLvaScore(a) > mvvLvaScore(b);  // captures have score 0 for non-captures
     });
 
     int bestScore = -INF;
 
-    for (Move move : moves) {
-        board.makeMove(move);
+    for (Move& m : moves) {
+        board.makeMove(m);
 
         int score = -negamax(board, depth - 1, -beta, -alpha, stop);
 
-        board.unmakeMove(move);
+        board.unmakeMove(m);
 
         if (score > bestScore) bestScore = score;
 
@@ -56,19 +54,19 @@ Move findBestMove(Board& board, int depth, bool& stop) {
     Move bestMove = moves[0];
     int bestScore = -INF;
 
-    for (Move move : moves) {
+    for (Move& m : moves) {
 
         if (stop) return bestMove;
 
-        board.makeMove(move);
+        board.makeMove(m);
 
         int score = -negamax(board, depth - 1, -INF, INF, stop);
 
-        board.unmakeMove(move);
+        board.unmakeMove(m);
 
         if (score > bestScore || bestMove.isNull()) {
             bestScore = score;
-            bestMove = move;
+            bestMove = m;
         }
     }
     return bestMove;
@@ -86,14 +84,18 @@ int quiescence(Board& board, int alpha, int beta, bool& stop) {
 
     vector<Move> moves = board.generateLegalMoves();
 
-    sort(moves.begin(), moves.end(), [](Move a, Move b) {
-        if (a.capturedPiece != -1 || b.capturedPiece != -1)
-            return mvvLvaScore(a) > mvvLvaScore(b);
-        return false; // keep original order for non-captures
+    // Keep only captures
+    moves.erase(
+        remove_if(moves.begin(), moves.end(), [](const Move& m){ return m.capturedPiece == -1; }),
+        moves.end()
+    );
+
+    // Sort captures by MVV-LVA
+    sort(moves.begin(), moves.end(), [](const Move& a, const Move& b){
+        return mvvLvaScore(a) > mvvLvaScore(b);
     });
 
-    for (Move m : moves) {
-        if (m.capturedPiece == -1) continue;
+    for (Move& m : moves) {
 
         board.makeMove(m);
         

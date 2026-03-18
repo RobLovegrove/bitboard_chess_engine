@@ -43,8 +43,6 @@ int main() {
         string move;
 
         if (sideToMove == playersColour) {
-
-            engine.printBoard();
             cout << "It is your move! ";
             cin >> move;
             if (move == "quit" || move == "q") break;

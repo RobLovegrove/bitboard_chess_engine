@@ -56,6 +56,7 @@ bool Engine::parseMove(
 
 bool Engine::isGameOver(string& result) {
     vector<Move> legalMoves = board.generateLegalMoves();
+
     if (legalMoves.empty()) {
         if (board.isKingInCheck(board.getSideToMove())) {
             result = "CHECKMATE";
