@@ -74,6 +74,7 @@ struct Move {
 };
 
 std::ostream& operator<<(std::ostream& os, const Move& m);
+bool operator==(const Move& a, const Move& b);
 std::string moveToSAN(const Move& m);
 
 class Board {

@@ -545,6 +545,12 @@ ostream& operator<<(ostream& os, const Move& m) {
     return os;
 }
 
+bool operator==(const Move& a, const Move& b) {
+    return a.from == b.from &&
+           a.to == b.to &&
+           a.promotionPiece == b.promotionPiece;
+}
+
 string moveToSAN(const Move& m) {
 
     stringstream os;

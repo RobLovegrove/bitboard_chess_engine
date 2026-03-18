@@ -6,22 +6,25 @@ using namespace std;
 const int INF = 10000000;
 const int MATE_SCORE = 100000000;
 
-int negamax(Board& board, int depth, int alpha, int beta, bool& stop) {
+Move killerMoves[MAX_DEPTH][2] = {};
+int history[12][64] = {};
+
+int negamax(Board& board, int depth, int alpha, int beta, int ply, bool& stop) {
 
     if (stop) return 0;
 
-    if (depth == 0) return quiescence(board, alpha, beta, stop);
+    if (depth == 0) return quiescence(board, alpha, beta, ply+1, stop);
     //if (depth == 0) return evaluate(board);
 
     vector<Move> moves = board.generateLegalMoves();
 
     if (moves.empty()) {
-        if (board.isKingInCheck(board.getSideToMove())) return -MATE_SCORE; // + ply;  -- Need to add ply count at some point
+        if (board.isKingInCheck(board.getSideToMove())) return -MATE_SCORE + ply;
         else { return 0; }
     }
 
-    sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
-        return mvvLvaScore(a) > mvvLvaScore(b);  // captures have score 0 for non-captures
+    sort(moves.begin(), moves.end(), [&](const Move& a, const Move& b) {
+        return scoreMove(a, ply) > scoreMove(b, ply);
     });
 
     int bestScore = -INF;
@@ -29,13 +32,24 @@ int negamax(Board& board, int depth, int alpha, int beta, bool& stop) {
     for (Move& m : moves) {
         board.makeMove(m);
 
-        int score = -negamax(board, depth - 1, -beta, -alpha, stop);
+        int score = -negamax(board, depth - 1, -beta, -alpha, ply+1, stop);
 
         board.unmakeMove(m);
 
         if (score > bestScore) bestScore = score;
 
         if (score > alpha) alpha = score;
+
+        if (score >= beta) {
+
+            if (m.capturedPiece == -1) {
+                // shift old killer
+                killerMoves[ply][1] = killerMoves[ply][0];
+                killerMoves[ply][0] = m;
+                history[m.movedPiece][m.to] += depth * depth;
+            }
+            return beta;
+        }
 
         if (alpha >= beta) break;
     }
@@ -44,12 +58,23 @@ int negamax(Board& board, int depth, int alpha, int beta, bool& stop) {
 
 Move findBestMove(Board& board, int depth, bool& stop) {
 
+    // Reset history decay at start of root search
+    for (int p = 0; p < 12; ++p) {
+        for (int sq = 0; sq < 64; ++sq) {
+            history[p][sq] /= 2;
+        }
+    }
+
     vector<Move> moves = board.generateLegalMoves();
 
     if (moves.empty()) { 
         cout << "No legal move found" << endl;
         return Move::null();
      }
+
+    sort(moves.begin(), moves.end(), [&](const Move& a, const Move& b){
+        return scoreMove(a, 0) > scoreMove(b, 0);
+    });
 
     Move bestMove = moves[0];
     int bestScore = -INF;
@@ -60,7 +85,7 @@ Move findBestMove(Board& board, int depth, bool& stop) {
 
         board.makeMove(m);
 
-        int score = -negamax(board, depth - 1, -INF, INF, stop);
+        int score = -negamax(board, depth - 1, -INF, INF, 0, stop);
 
         board.unmakeMove(m);
 
@@ -72,7 +97,21 @@ Move findBestMove(Board& board, int depth, bool& stop) {
     return bestMove;
 }
 
-int quiescence(Board& board, int alpha, int beta, bool& stop) {
+int scoreMove(const Move& m, int ply) {
+
+    // 1. Captures → MVV-LVA
+    if (m.capturedPiece != -1)
+        return 100000 + mvvLvaScore(m);
+
+    // 2. Killer moves
+    if (m == killerMoves[ply][0]) return 90000;
+    if (m == killerMoves[ply][1]) return 80000;
+
+    // 3. History heuristic
+    return history[m.movedPiece][m.to];
+}
+
+int quiescence(Board& board, int alpha, int beta, int ply, bool& stop) {
 
     if (stop) return 0;
 
@@ -90,8 +129,7 @@ int quiescence(Board& board, int alpha, int beta, bool& stop) {
         moves.end()
     );
 
-    // Sort captures by MVV-LVA
-    sort(moves.begin(), moves.end(), [](const Move& a, const Move& b){
+    sort(moves.begin(), moves.end(), [&](const Move& a, const Move& b) {
         return mvvLvaScore(a) > mvvLvaScore(b);
     });
 
@@ -99,7 +137,7 @@ int quiescence(Board& board, int alpha, int beta, bool& stop) {
 
         board.makeMove(m);
         
-        int score = -quiescence(board, -beta, -alpha, stop);
+        int score = -quiescence(board, -beta, -alpha, ply+1, stop);
 
         board.unmakeMove(m);
 
