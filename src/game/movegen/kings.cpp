@@ -26,7 +26,12 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
         while(attacks) {
             int to = __builtin_ctzll(attacks);
             attacks &= attacks - 1;
-            moves.push_back(Move{sq, to});
+
+            // Check if capturing piece
+            Move move = Move{sq, to};
+            move.capturedPiece = board.getPieceOnSquare(to);
+            move.movedPiece = piece;
+            moves.push_back(move);
         }
 
         // Castling
@@ -40,6 +45,7 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                         !board.isSquareAttacked(6, opponent)) {
                             Move m = Move(4,6);
                             m.isCastling = true;
+                            m.movedPiece = piece;
                             moves.push_back(m);
                     }
                 }
@@ -53,6 +59,7 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                         !board.isSquareAttacked(2, opponent)) {
                             Move m = Move(4,2);
                             m.isCastling = true;
+                            m.movedPiece = piece;
                             moves.push_back(m);
                     }
                 }
@@ -68,6 +75,7 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                         !board.isSquareAttacked(62, opponent)) {
                             Move m = Move(60,62);
                             m.isCastling = true;
+                            m.movedPiece = piece;
                             moves.push_back(m);
                     }
                 }
@@ -81,6 +89,7 @@ vector<Move> generateKingMoves(Board& board, Colour sideToMove) {
                         !board.isSquareAttacked(58, opponent)) {
                             Move m = Move(60,58);
                             m.isCastling = true;
+                            m.movedPiece = piece;
                             moves.push_back(m);
                     }
                 }

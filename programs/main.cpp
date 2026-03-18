@@ -10,7 +10,8 @@ int main() {
     #ifdef DEBUG
     // Initialise Engine
     Engine engine;
-    engine.newGameWithFEN("8/8/1K6/8/8/8/1k6/Q2R4 b - - 28 82");
+    //engine.newGameWithFEN("k7/8/1K5R/8/8/8/8/8 w - - 28 82");
+    engine.newGame();
 
     int depth = 4;
 

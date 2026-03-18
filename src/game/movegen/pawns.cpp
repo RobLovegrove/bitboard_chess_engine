@@ -37,6 +37,7 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
         if (oneStep & empty) {
             int toSq = (sideToMove == WHITE) ? sq + 8 : sq - 8;
             Move move = Move{sq, toSq};
+            move.movedPiece = piece;
 
             // Promotion
             if (oneStep & promoRank) {
@@ -56,7 +57,8 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
                 if (twoStep & empty) {
                     int eps = toSq;
                     toSq = (sideToMove == WHITE) ? sq + 16 : sq - 16;
-                    moves.push_back(Move{sq, toSq, -1, eps, -1, -1, 0, false, false});
+                    Move m = Move{sq, toSq, piece, -1, eps, -1, -1, 0, false, false};
+                    moves.push_back(m);
                 }
             }
         }
@@ -69,6 +71,10 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
             int toSq = __builtin_ctzll(normalCaptures);
             normalCaptures &= normalCaptures - 1;
             Move move = Move{sq, toSq};
+            move.movedPiece = piece;
+
+            // Check if capturing piece
+            move.capturedPiece = board.getPieceOnSquare(toSq);
 
             // Promotion
             if ((1ULL << toSq) & promoRank) {
@@ -77,7 +83,7 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
                     moves.push_back(move);
                 }
             }
-            else { moves.push_back(Move{sq, toSq}); }
+            else { moves.push_back(move); }
         }
 
         int eps = board.getEnPassantSquare();
@@ -89,7 +95,8 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
                     capturedPawn = BP;
                     pawnSq = eps - 8;
                 }
-                moves.push_back(Move(sq, eps, capturedPawn, -1, pawnSq, -1, 0, true, false));
+                Move m = Move(sq, eps, piece, capturedPawn, -1, pawnSq, -1, 0, true, false);
+                moves.push_back(m);
             }
         }
 

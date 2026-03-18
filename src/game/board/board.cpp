@@ -142,14 +142,6 @@ void Board::makeMove(Move& m) {
     m.prevEnpassantSquare = enPassantSquare;
     m.prevCastlingRights = castlingRights;
 
-    // Determine which piece is moving
-    for (int i = 0; i < 12; i++) {
-        if (bitboards[i] & fromBB) {
-            m.movedPiece = i;
-            break;
-        }
-    }
-
     if (m.isEnpassant) {
         // Pawn is being captured by enpassant
         bitboards[m.capturedPiece] &= ~(1ULL << m.capturedPawnSquare);
@@ -160,13 +152,8 @@ void Board::makeMove(Move& m) {
         enPassantSquare = m.epSquareToSet;
     }
     else {
-        // Remove captured piece
-        for (int i = 0; i < 12; i++) {
-            if (bitboards[i] & toBB) {
-                m.capturedPiece = i;
-                bitboards[i] &= ~toBB;
-                break;
-            }
+        if (m.capturedPiece != -1) {
+            bitboards[m.capturedPiece] &= ~toBB;
         }
         enPassantSquare = -1; // Capturing piece not double pawn push so clear board enpassant flag
     }
@@ -315,6 +302,17 @@ bool Board::isSquareAttacked(int square, Colour bySide) {
     if (kingAttacks[square] & kingBB) return true;
 
     return false;
+}
+
+PieceType Board::getPieceOnSquare(int sq) {
+    uint64_t mask = 1ULL << sq;
+
+    for (int piece = WP; piece <= BK; piece++) {
+        if (bitboards[piece] & mask)
+            return static_cast<PieceType>(piece);
+    }
+
+    return EMPTY;
 }
 
 

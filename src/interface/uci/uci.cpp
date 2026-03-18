@@ -12,7 +12,7 @@ using namespace std;
 
 void uciLoop() {
 
-    ofstream debugLog("/Users/rob/Documents/CS/Chess/chess_engine/debug.txt", ios::app);
+    ofstream debugLog("/Users/rob/Documents/CS/Chess/chess_engine/debug.txt", ios::trunc);
 
     Engine engine;
     initAttacks();
@@ -62,14 +62,14 @@ void uciLoop() {
             if (movesWord == "moves") {
                 string moveStr;
                 while (iss >> moveStr) {
-                    debugLog << "Opponent Move: " << moveStr << endl;
+                    debugLog << "Move: " << moveStr << endl;
                     debugLog.flush();
                     engine.makeMove(moveStr);
                 }
             }
         }
         else if (cmd == "go") {
-            int depth = 5;
+            int depth = 4;
             string token;
 
             while (iss >> token) {

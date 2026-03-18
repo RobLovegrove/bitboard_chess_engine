@@ -57,8 +57,10 @@ vector<Move> generateBishopMoves(Board& board, Colour sideToMove) {
     uint64_t bishops = board.getBitboard(BB);
     uint64_t occupancy = board.getOccupancy();
     uint64_t ownPieces = board.getPieces(BLACK);
+    int piece = BB;
 
     if (sideToMove == WHITE) {
+        piece = WB;
         bishops = board.getBitboard(WB);
         ownPieces = board.getPieces(WHITE);
     }
@@ -71,8 +73,13 @@ vector<Move> generateBishopMoves(Board& board, Colour sideToMove) {
         while (attacks) {
             int toSq = __builtin_ctzll(attacks);
             attacks &= attacks - 1;
-
-            moves.push_back(Move(fromSq, toSq));
+            
+            // Check if capturing piece
+            Move move = Move{fromSq, toSq};
+            move.movedPiece = piece;
+            move.capturedPiece = board.getPieceOnSquare(toSq);
+            
+            moves.push_back(move);
         }
     }
 
@@ -86,8 +93,10 @@ vector<Move> generateRookMoves(Board& board, Colour sideToMove) {
     uint64_t rooks = board.getBitboard(BR);
     uint64_t occupancy = board.getOccupancy();
     uint64_t ownPieces = board.getPieces(BLACK);
+    int piece = BR;
 
     if (sideToMove == WHITE) {
+        piece = WR;
         rooks = board.getBitboard(WR);
         ownPieces = board.getPieces(WHITE);
     }
@@ -101,7 +110,12 @@ vector<Move> generateRookMoves(Board& board, Colour sideToMove) {
             int toSq = __builtin_ctzll(attacks);
             attacks &= attacks - 1;
 
-            moves.push_back(Move(fromSq, toSq));
+            // Check if capturing piece
+            Move move = Move{fromSq, toSq};
+            move.movedPiece = piece;
+            move.capturedPiece = board.getPieceOnSquare(toSq);
+            
+            moves.push_back(move);
         }
     }
 
@@ -115,8 +129,10 @@ vector<Move> generateQueenMoves(Board& board, Colour sideToMove) {
     uint64_t queens = board.getBitboard(BQ);
     uint64_t occupancy = board.getOccupancy();
     uint64_t ownPieces = board.getPieces(BLACK);
+    int piece = BQ;
 
     if (sideToMove == WHITE) {
+        piece = WQ;
         queens = board.getBitboard(WQ);
         ownPieces = board.getPieces(WHITE);
     }
@@ -130,7 +146,13 @@ vector<Move> generateQueenMoves(Board& board, Colour sideToMove) {
             int toSq = __builtin_ctzll(attacks);
             attacks &= attacks - 1;
 
-            moves.push_back(Move(fromSq, toSq));
+            // Check if capturing piece
+            Move move = Move{fromSq, toSq};
+            move.movedPiece = piece;
+
+            move.capturedPiece = board.getPieceOnSquare(toSq);
+            
+            moves.push_back(move);
         }
     }
 

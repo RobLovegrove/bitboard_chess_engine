@@ -4,12 +4,13 @@
 
 #include "../src/game/attacks/attacks.h"
 #include "../src/game/board/board.h"
+#include "../src/search/search.h"
 
 using namespace std;
 
 struct PerftTest {
     string name;
-    Board position;
+    Board& position;
     long long targets[6]; // targets for depths 1..6
 };
 
@@ -27,8 +28,6 @@ int main() {
     Board pos4("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
     Board pos5("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
     Board pos6("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
-
-    cout << board.perft(1) << endl;
 
     // -----------------------------
     // Setup test positions and targets

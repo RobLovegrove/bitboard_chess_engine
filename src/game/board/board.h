@@ -44,10 +44,11 @@ struct Move {
 
     Move() {}
     
-    Move(int f, int t, int captured, int epSet, int capturePawn, 
+    Move(int f, int t, int movedpiece, int captured, int epSet, int capturePawn, 
         int promoPiece, uint8_t prevCastlingRights, bool isEP, bool isC)
     : from(f),
         to(t),
+        movedPiece(movedpiece),
         capturedPiece(captured),
         prevEnpassantSquare(-1),
         epSquareToSet(epSet),
@@ -58,7 +59,7 @@ struct Move {
     {}
 
     // Constructor with from/to only
-    Move(int f, int t) : Move(f,t,-1,-1,-1,-1, 0, false, false) {}
+    Move(int f, int t) : Move(f,t,-1, -1,-1,-1,-1, 0, false, false) {}
 
     static Move null() {
         return Move(-1,-1);
@@ -104,6 +105,7 @@ class Board {
     Colour getSideToMove() const { return sideToMove; }
     int getEnPassantSquare() const { return enPassantSquare; }
     uint8_t getCastlingRights() const { return castlingRights; }
+    PieceType getPieceOnSquare(int sq);
 
     // SETTERS
     void setEnPassantSquare(int ePS) {enPassantSquare = ePS; } 

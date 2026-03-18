@@ -24,7 +24,12 @@ vector<Move> generateKnightMoves(Board& board, Colour sideToMove) {
         while(attacks) {
             int to = __builtin_ctzll(attacks);
             attacks &= attacks - 1;
-            moves.push_back(Move{sq, to});
+
+            // Check if capturing piece
+            Move move = Move{sq, to};
+            move.capturedPiece = board.getPieceOnSquare(to);
+            move.movedPiece = piece;
+            moves.push_back(move);
         }
     }
     return moves;
