@@ -57,7 +57,7 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
                 if (twoStep & empty) {
                     int eps = toSq;
                     toSq = (sideToMove == WHITE) ? sq + 16 : sq - 16;
-                    Move m = Move{sq, toSq, piece, -1, 0, eps, -1, -1, 0, false, false};
+                    Move m = Move{sq, toSq, piece, -1, eps, -1, -1, false, false};
                     moves.push_back(m);
                 }
             }
@@ -95,7 +95,7 @@ vector<Move> generatePawnMoves(Board& board, Colour sideToMove) {
                     capturedPawn = BP;
                     pawnSq = eps - 8;
                 }
-                Move m = Move(sq, eps, piece, capturedPawn, 0, -1, pawnSq, -1, 0, true, false);
+                Move m = Move(sq, eps, piece, capturedPawn, -1, pawnSq, -1, true, false);
                 moves.push_back(m);
             }
         }

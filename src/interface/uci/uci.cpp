@@ -78,7 +78,8 @@ void uciLoop() {
                 }
             }
 
-            string best = engine.searchBestMove(depth);
+            Move bm = engine.searchBestMove(depth);
+            string best = moveToLAN(bm);
             debugLog << "Engine Move: " << best << endl;
             string boardString = engine.printBoardToString();
             debugLog << boardString << endl;

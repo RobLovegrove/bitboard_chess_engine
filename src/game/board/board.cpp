@@ -19,7 +19,6 @@ Board::Board(const string fen) {
     init(fen);
 }
 
-// Initialise standard chess starting position
 void Board::init(const string fen) {
 
     // Start Position
@@ -84,9 +83,15 @@ void Board::init(const string fen) {
         enPassantSquare = -1;
     }
 
-    halfmove = stoi(halfmovePart);
+    halfmove = 0;
+    fullmove = 1;
 
-    fullmove = stoi(fullmovePart);
+    if (ss >> halfmovePart) {
+        try { halfmove = stoi(halfmovePart); } catch(...) {}
+    }
+    if (ss >> fullmovePart) {
+        try { fullmove = stoi(fullmovePart); } catch(...) {}
+    }
 
     updateOccupancy();    
 }
@@ -121,11 +126,12 @@ std::vector<Move> Board::generateLegalMoves() {
     vector<Move> legalMoves;
 
     for (Move& m : moves) {
-        makeMove(m); // Will swap colour to move at end of makeMove
+        Undo u;
+        makeMove(m, u); // Will swap colour to move at end of makeMove
         if (!isKingInCheck(static_cast<Colour>(sideToMove^1))) {
             legalMoves.push_back(m);
         }
-        unmakeMove(m);
+        unmakeMove(m, u);
     }
 
     return legalMoves;
@@ -140,34 +146,36 @@ bool Board::isKingInCheck(Colour stm) {
     return isSquareAttacked(kingSq, static_cast<Colour>(stm^1));
 }
 
-void Board::makeMove(Move& m) {
+void Board::makeMove(Move& m, Undo& u) {
+
+    u.halfmove = halfmove;
+    u.fullmove = fullmove;
+    u.enPassantSquare = enPassantSquare;
+    u.castlingRights = castlingRights;
+
+    u.capturedPiece = m.capturedPiece;
+    u.capturedSquare = m.isEnpassant ? m.capturedPawnSquare : m.to;
 
     if (sideToMove == BLACK) fullmove++; 
-    m.prevHalfmove = halfmove;
     halfmove++;
     ply++;
 
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB = 1ULL << m.to;
 
-    m.prevEnpassantSquare = enPassantSquare;
-    m.prevCastlingRights = castlingRights;
+    enPassantSquare = -1;
 
-    enPassantSquare = -1; 
     if (m.isEnpassant) {
-        // Pawn is being captured by enpassant
-        bitboards[m.capturedPiece] &= ~(1ULL << m.capturedPawnSquare);
-        enPassantSquare = -1; 
-        halfmove = 0;
-    }
-    else if (m.epSquareToSet != -1) {
-        // Double pawn push so setting board.enpassantSquare
-        enPassantSquare = m.epSquareToSet;
+        bitboards[u.capturedPiece] &= ~(1ULL << u.capturedSquare);
         halfmove = 0;
     }
     else if (m.capturedPiece != -1) {
-        bitboards[m.capturedPiece] &= ~toBB;
+        bitboards[u.capturedPiece] &= ~toBB;
         halfmove = 0;
+    }
+
+    if (m.epSquareToSet != -1) {
+        enPassantSquare = m.epSquareToSet;
     }
 
     // Handle castling
@@ -184,6 +192,17 @@ void Board::makeMove(Move& m) {
         } else if (m.to == 58) { // BK queenside
             bitboards[BR] &= ~(1ULL << 56);
             bitboards[BR] |= (1ULL << 59);
+        }
+    }
+
+    if (!(bitboards[m.movedPiece] & fromBB)) {
+        cout << static_cast<PieceType>(m.movedPiece) << endl;
+        cout << "Moving from: " << squareToString(m.from) << " to: " << squareToString(m.to) << endl; 
+        printBoard();
+
+        for (int i = 0; i < 12; i++) {
+            cout << static_cast<PieceType>(i) << " bitboard" << endl;
+            printBitboard(i);
         }
     }
 
@@ -212,54 +231,50 @@ void Board::makeMove(Move& m) {
     sideToMove = static_cast<Colour>(sideToMove ^ 1);
 }
 
-void Board::unmakeMove(Move& m) {
+void Board::unmakeMove(Move& m, Undo& u) {
 
     sideToMove = static_cast<Colour>(sideToMove ^ 1);
-    if (sideToMove == BLACK) fullmove--;
-    halfmove = m.prevHalfmove;
+
+    halfmove = u.halfmove;
+    fullmove = u.fullmove;
     ply--;
 
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB   = 1ULL << m.to;
 
-    // Remove piece from destination
-    bitboards[m.movedPiece] &= ~toBB;
-
+    // Move piece back
     if (m.promotionPiece != -1) {
-        bitboards[m.promotionPiece] &= ~toBB; // remove promoted piece
-        bitboards[m.movedPiece] |= fromBB;    // restore pawn
-    } 
-    else {
+        bitboards[m.promotionPiece] &= ~toBB;
+        bitboards[m.movedPiece] |= fromBB;
+    } else {
+        bitboards[m.movedPiece] &= ~toBB;
         bitboards[m.movedPiece] |= fromBB;
     }
 
-    // Undo castling rook moves
+    // Undo castling rook move
     if (m.isCastling) {
-        if (m.to == 6) { // WK kingside
+        if (m.to == 6) { // WK
             bitboards[WR] &= ~(1ULL << 5);
             bitboards[WR] |= (1ULL << 7);
-        } else if (m.to == 2) { // WK queenside
+        } else if (m.to == 2) {
             bitboards[WR] &= ~(1ULL << 3);
             bitboards[WR] |= (1ULL << 0);
-        } else if (m.to == 62) { // BK kingside
+        } else if (m.to == 62) {
             bitboards[BR] &= ~(1ULL << 61);
             bitboards[BR] |= (1ULL << 63);
-        } else if (m.to == 58) { // BK queenside
+        } else if (m.to == 58) {
             bitboards[BR] &= ~(1ULL << 59);
             bitboards[BR] |= (1ULL << 56);
         }
     }
 
     // Restore captured piece
-    if (m.isEnpassant) {
-        bitboards[m.capturedPiece] |= 1ULL << m.capturedPawnSquare;
-    } else if (m.capturedPiece != -1) {
-        bitboards[m.capturedPiece] |= toBB;
+    if (u.capturedPiece != -1) {
+        bitboards[u.capturedPiece] |= (1ULL << u.capturedSquare);
     }
 
-    // Restore castling rights and en passant square
-    castlingRights = m.prevCastlingRights;
-    enPassantSquare = m.prevEnpassantSquare;
+    castlingRights = u.castlingRights;
+    enPassantSquare = u.enPassantSquare;
 
     updateOccupancy();
 }
@@ -345,9 +360,10 @@ uint64_t Board::perft(int depth) {
     uint64_t nodes = 0;
     auto moves = generateLegalMoves();
     for (auto m : moves) {
-        makeMove(m);
+        Undo u;
+        makeMove(m, u);
         nodes += perft(depth - 1);
-        unmakeMove(m);
+        unmakeMove(m, u);
     }
     return nodes;
 }
@@ -437,13 +453,14 @@ string Board::printBoardToString() const {
 
 void Board::printBitboard(uint64_t bb) const {
     for (int rank = 7; rank >= 0; --rank) {
+        cout << rank + 1 << " ";
         for (int file = 0; file < 8; ++file) {
             int sq = rank * 8 + file;
             cout << ((bb & (1ULL << sq)) ? "1 " : ". ");
         }
         cout << endl;
     }
-    cout << endl;
+    cout << "  a b c d e f g h\n\n";
 }
 
 // Util Functions
@@ -524,8 +541,30 @@ string squareToString(int sq) {
 
 // Overload << for Move
 ostream& operator<<(ostream& os, const Move& m) {
-    os << squareToString(m.from)
-       << squareToString(m.to);
+
+    os << moveToLAN(m);
+    return os;
+}
+
+bool operator==(const Move& a, const Move& b) {
+    return a.from == b.from &&
+           a.to == b.to &&
+           a.promotionPiece == b.promotionPiece;
+}
+
+bool operator!=(const Move& a, const Move& b) {
+    return a.from != b.from ||
+           a.to != b.to ||
+           a.promotionPiece != b.promotionPiece;
+}
+
+string moveToLAN(const Move& m) { // Long algebraic notation
+
+    if (m.isNull()) return "0000";
+
+    string move;
+
+    move = squareToString(m.from) + squareToString(m.to);
 
     // promotion
     if (m.promotionPiece != -1) {
@@ -539,16 +578,11 @@ ostream& operator<<(ostream& os, const Move& m) {
             default: promo = 'q';
         }
 
-        os << promo;
+        move += promo;
     }
 
-    return os;
-}
+    return move;
 
-bool operator==(const Move& a, const Move& b) {
-    return a.from == b.from &&
-           a.to == b.to &&
-           a.promotionPiece == b.promotionPiece;
 }
 
 string moveToSAN(const Move& m) {
@@ -602,4 +636,38 @@ string moveToSAN(const Move& m) {
     os << pieceChar << captureChar << toSquare << promoChar;
 
     return os.str();
+}
+
+string Board::moveToBK(Move& m) {
+    if (m.isNull()) return "";
+
+    string s;
+
+    // Castling
+    if (m.isCastling) {
+        if (m.to > m.from) return "O-O";     // kingside
+        else return "O-O-O";                  // queenside
+    }
+
+    // Piece letter, empty for pawn
+    switch (m.movedPiece) {
+        case WN: case BN: s += "N"; break;
+        case WB: case BB: s += "B"; break;
+        case WR: case BR: s += "R"; break;
+        case WQ: case BQ: s += "Q"; break;
+        case WK: case BK: s += "K"; break;
+        default: break; // pawns
+    }
+
+    // Destination square
+    int file = m.to % 8;
+    int rank = m.to / 8;
+    s += char('a' + file);
+    s += char('1' + rank);
+
+    // Add '+' if move gives check
+    Undo u;
+    makeMove(m, u);
+    if (isKingInCheck(sideToMove)) s += "+";
+    return s;
 }

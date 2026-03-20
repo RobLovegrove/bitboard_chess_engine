@@ -7,3 +7,4 @@ build/
 
 # Ignore debug files
 *.txt
+*.csv

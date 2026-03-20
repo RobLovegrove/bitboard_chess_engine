@@ -7,7 +7,7 @@ CXXFLAGS = -std=c++17 -Wall -I. -Isrc
 # ------------------------
 # Directories
 # ------------------------
-SRC_DIRS := engine programs tests
+SRC_DIRS := src engine programs tests
 OBJ_DIR := build/obj
 BUILD_DIR := build
 
@@ -18,11 +18,12 @@ ENGINE_SRCS := $(shell find src -name "*.cpp")
 ENGINE_OBJS := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(ENGINE_SRCS))
 
 # ------------------------
-# Main engine program
+# Programs (main entry points)
 # ------------------------
-ENGINE_MAIN := programs/main.cpp
-ENGINE_MAIN_OBJ := $(OBJ_DIR)/programs/main.o
-ENGINE_EXE := $(BUILD_DIR)/chess
+PROGRAMS := uci bench
+PROGRAM_SRCS := $(patsubst %,programs/%.cpp,$(PROGRAMS))
+PROGRAM_OBJS := $(patsubst programs/%.cpp,$(OBJ_DIR)/programs/%.o,$(PROGRAM_SRCS))
+PROGRAM_EXES := $(patsubst programs/%.cpp,$(BUILD_DIR)/%,$(PROGRAM_SRCS))
 
 # ------------------------
 # Test programs
@@ -34,7 +35,7 @@ TEST_TARGETS := $(patsubst tests/%.cpp,$(BUILD_DIR)/%,$(TEST_SRCS))
 # ------------------------
 # All targets
 # ------------------------
-TARGETS := $(ENGINE_EXE) $(TEST_TARGETS)
+TARGETS := $(PROGRAM_EXES) $(TEST_TARGETS)
 
 # ------------------------
 # Default build
@@ -48,9 +49,9 @@ debug: CXXFLAGS += -O0 -g -DDEBUG
 debug: $(TARGETS)
 
 # ------------------------
-# Build main engine
+# Build program executables (uci, bench, etc.)
 # ------------------------
-$(ENGINE_EXE): $(ENGINE_OBJS) $(ENGINE_MAIN_OBJ)
+$(BUILD_DIR)/%: programs/%.cpp $(ENGINE_OBJS)
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
@@ -62,7 +63,7 @@ $(BUILD_DIR)/%: $(OBJ_DIR)/tests/%.o $(ENGINE_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # ------------------------
-# Generic object rule
+# Generic object compilation
 # ------------------------
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)

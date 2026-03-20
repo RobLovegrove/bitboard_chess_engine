@@ -82,7 +82,8 @@ void Engine::makeMove(const string& moveStr) {
     for (auto& m : legalMoves) {
         if (m.from == move.from && m.to == move.to) {
             m.promotionPiece = move.promotionPiece;
-            board.makeMove(m);
+            Undo u;
+            board.makeMove(m, u);
             return;
         }
     }
@@ -91,7 +92,12 @@ void Engine::makeMove(const string& moveStr) {
     throw runtime_error("Illegal move by " + colour + ": " + moveStr);
 }
 
-string Engine::searchBestMove(int maxDepth) {
+void Engine::makeMove(Move& move) {
+    Undo u;
+    board.makeMove(move, u);
+}
+
+Move Engine::searchBestMove(int maxDepth) {
 
     stop = false;
 
@@ -99,15 +105,11 @@ string Engine::searchBestMove(int maxDepth) {
 
     for (int depth = 1; depth <= maxDepth; depth++) {
         if (stop && depth > 1) break;
-        Move currentBest = findBestMove(board, depth, stop);
+        Move currentBest = findBestMove(board, depth, bestMove, nodes, stop);
         if (!currentBest.isNull()) bestMove = currentBest;
     }
 
-    if (bestMove.isNull()) return "0000";
-    
-    stringstream ss;
-    ss << bestMove;
-    return ss.str();
+    return bestMove;
 }
 
 void Engine::stopSearch() {

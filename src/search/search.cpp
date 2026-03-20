@@ -9,11 +9,13 @@ const int MATE_SCORE = 100000000;
 Move killerMoves[MAX_DEPTH][2] = {};
 int history[12][64] = {};
 
-int negamax(Board& board, int depth, int alpha, int beta, int ply, bool& stop) {
+int negamax(Board& board, int depth, int alpha, int beta, int ply, uint64_t& nodes, bool& stop) {
 
     if (stop) return 0;
 
-    if (depth == 0) return quiescence(board, alpha, beta, ply+1, stop);
+    nodes++; 
+
+    if (depth == 0) return quiescence(board, alpha, beta, ply+1, nodes, stop);
     //if (depth == 0) return evaluate(board);
 
     vector<Move> moves = board.generateLegalMoves();
@@ -30,11 +32,14 @@ int negamax(Board& board, int depth, int alpha, int beta, int ply, bool& stop) {
     int bestScore = -INF;
 
     for (Move& m : moves) {
-        board.makeMove(m);
 
-        int score = -negamax(board, depth - 1, -beta, -alpha, ply+1, stop);
+        Undo u;
 
-        board.unmakeMove(m);
+        board.makeMove(m, u);
+
+        int score = -negamax(board, depth - 1, -beta, -alpha, ply+1, nodes, stop);
+
+        board.unmakeMove(m, u);
 
         if (score > bestScore) bestScore = score;
 
@@ -56,7 +61,7 @@ int negamax(Board& board, int depth, int alpha, int beta, int ply, bool& stop) {
     return bestScore;
 }
 
-Move findBestMove(Board& board, int depth, bool& stop) {
+Move findBestMove(Board& board, int depth, Move prevBest, uint64_t& nodes, bool& stop) {
 
     // Reset history decay at start of root search
     for (int p = 0; p < 12; ++p) {
@@ -72,7 +77,16 @@ Move findBestMove(Board& board, int depth, bool& stop) {
         return Move::null();
      }
 
-    sort(moves.begin(), moves.end(), [&](const Move& a, const Move& b){
+     // Put previous best move first
+    if (!prevBest.isNull()) {
+        auto it = find(moves.begin(), moves.end(), prevBest);
+        if (it != moves.end()) {
+            iter_swap(moves.begin(), it);
+        }
+    }
+
+    sort(moves.begin() + 1 /* +1 so prevBest move stays first*/, 
+            moves.end(), [&](const Move& a, const Move& b) {
         return scoreMove(a, 0) > scoreMove(b, 0);
     });
 
@@ -81,13 +95,14 @@ Move findBestMove(Board& board, int depth, bool& stop) {
 
     for (Move& m : moves) {
 
+        Undo u; 
         if (stop) return bestMove;
 
-        board.makeMove(m);
+        board.makeMove(m, u);
 
-        int score = -negamax(board, depth - 1, -INF, INF, 0, stop);
+        int score = -negamax(board, depth - 1, -INF, INF, 0, nodes, stop);
 
-        board.unmakeMove(m);
+        board.unmakeMove(m, u);
 
         if (score > bestScore || bestMove.isNull()) {
             bestScore = score;
@@ -111,9 +126,11 @@ int scoreMove(const Move& m, int ply) {
     return history[m.movedPiece][m.to];
 }
 
-int quiescence(Board& board, int alpha, int beta, int ply, bool& stop) {
+int quiescence(Board& board, int alpha, int beta, int ply, uint64_t& nodes, bool& stop) {
 
     if (stop) return 0;
+
+    nodes++;
 
     int stand_pat = evaluate(board);
 
@@ -135,11 +152,13 @@ int quiescence(Board& board, int alpha, int beta, int ply, bool& stop) {
 
     for (Move& m : moves) {
 
-        board.makeMove(m);
-        
-        int score = -quiescence(board, -beta, -alpha, ply+1, stop);
+        Undo u;
 
-        board.unmakeMove(m);
+        board.makeMove(m, u);
+        
+        int score = -quiescence(board, -beta, -alpha, ply+1, nodes, stop);
+
+        board.unmakeMove(m, u);
 
         if (score >= beta) return beta;
 
