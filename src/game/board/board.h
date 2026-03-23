@@ -87,13 +87,19 @@ class Board {
     uint64_t blackPieces;
     uint64_t occupancy;
 
+    uint64_t zobristKey;
+    uint64_t preZK; // Testing purposes only
+
     int halfmove;
     int fullmove;
     int ply;
 
     void updateOccupancy();
     int charToPiece(char c);
-    
+    uint64_t computeZobrist();
+
+    bool pawnCanCaptureEP(int epSquare, Colour side);
+
     Colour sideToMove;
     int enPassantSquare;
     uint8_t castlingRights;

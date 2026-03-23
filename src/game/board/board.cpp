@@ -1,6 +1,7 @@
 #include "board.h"
 #include "../movegen/movegen.h"
 #include "../attacks/attacks.h"
+#include "zobrist.h"
 
 #include <iostream>
 #include <sstream>
@@ -94,6 +95,7 @@ void Board::init(const string fen) {
     }
 
     updateOccupancy();    
+    zobristKey = computeZobrist();
 }
 
 vector<Move> Board::generatePseudoLegalMoves() {
@@ -127,11 +129,36 @@ std::vector<Move> Board::generateLegalMoves() {
 
     for (Move& m : moves) {
         Undo u;
+
+        preZK = zobristKey;
+        uint64_t computedBefore = computeZobrist();
+
         makeMove(m, u); // Will swap colour to move at end of makeMove
+        uint64_t computedAfterMake = computeZobrist();
+        uint64_t incrementalAfterMake = zobristKey;
+
         if (!isKingInCheck(static_cast<Colour>(sideToMove^1))) {
             legalMoves.push_back(m);
         }
         unmakeMove(m, u);
+        uint64_t computedAfterUnmake = computeZobrist();
+
+        if (preZK != zobristKey) {
+            cout << "Move: " << m << endl;
+            cout << "Computed before:       " << hex << computedBefore << endl;
+            cout << "Incremental after make: " << incrementalAfterMake << endl;
+            cout << "Computed after make:    " << computedAfterMake << endl;
+            cout << "Incremental after unmake: " << zobristKey << endl;
+            cout << "Computed after unmake:  " << computedAfterUnmake << endl;
+
+            // This tells you which side is broken
+            if (incrementalAfterMake != computedAfterMake)
+                cout << ">>> makeMove is corrupting the key" << endl;
+            else
+                cout << ">>> unmakeMove is corrupting the key" << endl;
+        }
+
+        assert(preZK == zobristKey);
     }
 
     return legalMoves;
@@ -156,84 +183,102 @@ void Board::makeMove(Move& m, Undo& u) {
     u.capturedPiece = m.capturedPiece;
     u.capturedSquare = m.isEnpassant ? m.capturedPawnSquare : m.to;
 
-    if (sideToMove == BLACK) fullmove++; 
+    if (sideToMove == BLACK) fullmove++;
     halfmove++;
     ply++;
 
     uint64_t fromBB = 1ULL << m.from;
     uint64_t toBB = 1ULL << m.to;
 
+    // Remove old en passant from zobristKey if it existed and a pawn could capture it
+    if (u.enPassantSquare != -1 && pawnCanCaptureEP(u.enPassantSquare, sideToMove))
+        zobristKey ^= Zobrist::enpassant[u.enPassantSquare % 8];
+
     enPassantSquare = -1;
 
+    // Handle captures
     if (m.isEnpassant) {
         bitboards[u.capturedPiece] &= ~(1ULL << u.capturedSquare);
+        zobristKey ^= Zobrist::piece[u.capturedPiece][u.capturedSquare];
         halfmove = 0;
-    }
-    else if (m.capturedPiece != -1) {
+    } else if (m.capturedPiece != -1) {
         bitboards[u.capturedPiece] &= ~toBB;
+        zobristKey ^= Zobrist::piece[u.capturedPiece][u.capturedSquare];
         halfmove = 0;
     }
 
+    // Set new en passant square
     if (m.epSquareToSet != -1) {
         enPassantSquare = m.epSquareToSet;
+        if (pawnCanCaptureEP(enPassantSquare, static_cast<Colour>(sideToMove ^ 1)))
+            zobristKey ^= Zobrist::enpassant[enPassantSquare % 8];
     }
 
-    // Handle castling
+    // Handle castling rook
     if (m.isCastling) {
-        if (m.to == 6) { // WK kingside
+        if (m.to == 6) {
             bitboards[WR] &= ~(1ULL << 7);
-            bitboards[WR] |= (1ULL << 5);
-        } else if (m.to == 2) { // WK queenside
+            bitboards[WR] |=  (1ULL << 5);
+            zobristKey ^= Zobrist::piece[WR][7];
+            zobristKey ^= Zobrist::piece[WR][5];
+        } else if (m.to == 2) {
             bitboards[WR] &= ~(1ULL << 0);
-            bitboards[WR] |= (1ULL << 3);
-        } else if (m.to == 62) { // BK kingside
+            bitboards[WR] |=  (1ULL << 3);
+            zobristKey ^= Zobrist::piece[WR][0];
+            zobristKey ^= Zobrist::piece[WR][3];
+        } else if (m.to == 62) {
             bitboards[BR] &= ~(1ULL << 63);
-            bitboards[BR] |= (1ULL << 61);
-        } else if (m.to == 58) { // BK queenside
+            bitboards[BR] |=  (1ULL << 61);
+            zobristKey ^= Zobrist::piece[BR][63];
+            zobristKey ^= Zobrist::piece[BR][61];
+        } else if (m.to == 58) {
             bitboards[BR] &= ~(1ULL << 56);
-            bitboards[BR] |= (1ULL << 59);
-        }
-    }
-
-    if (!(bitboards[m.movedPiece] & fromBB)) {
-        cout << static_cast<PieceType>(m.movedPiece) << endl;
-        cout << "Moving from: " << squareToString(m.from) << " to: " << squareToString(m.to) << endl; 
-        printBoard();
-
-        for (int i = 0; i < 12; i++) {
-            cout << static_cast<PieceType>(i) << " bitboard" << endl;
-            printBitboard(i);
+            bitboards[BR] |=  (1ULL << 59);
+            zobristKey ^= Zobrist::piece[BR][56];
+            zobristKey ^= Zobrist::piece[BR][59];
         }
     }
 
     // Move the piece
     assert(bitboards[m.movedPiece] & fromBB);
     bitboards[m.movedPiece] &= ~fromBB;
+    zobristKey ^= Zobrist::piece[m.movedPiece][m.from];
+
     if (m.promotionPiece != -1) {
         bitboards[m.promotionPiece] |= toBB;
+        zobristKey ^= Zobrist::piece[m.promotionPiece][m.to];
     } else {
         bitboards[m.movedPiece] |= toBB;
+        zobristKey ^= Zobrist::piece[m.movedPiece][m.to];
     }
 
-    if (m.movedPiece == WP || m.movedPiece == BP) {
+    if (m.movedPiece == WP || m.movedPiece == BP)
         halfmove = 0;
-    }
 
     // Update castling rights
-    if (m.from == 4) castlingRights &= ~(WKS | WQS);
-    if (m.from == 60) castlingRights &= ~(BKS | BQS);
+    if (m.from == 4)              castlingRights &= ~(WKS | WQS);
+    if (m.from == 60)             castlingRights &= ~(BKS | BQS);
     if (m.from == 0 || m.to == 0) castlingRights &= ~WQS;
     if (m.from == 7 || m.to == 7) castlingRights &= ~WKS;
     if (m.from == 56 || m.to == 56) castlingRights &= ~BQS;
     if (m.from == 63 || m.to == 63) castlingRights &= ~BKS;
 
+    zobristKey ^= Zobrist::castling[u.castlingRights];
+    zobristKey ^= Zobrist::castling[castlingRights];
+
     updateOccupancy();
     sideToMove = static_cast<Colour>(sideToMove ^ 1);
+    zobristKey ^= Zobrist::side;
 }
 
 void Board::unmakeMove(Move& m, Undo& u) {
 
+    zobristKey ^= Zobrist::side;
     sideToMove = static_cast<Colour>(sideToMove ^ 1);
+
+    // Remove current EP from key if it was hashed (sideToMove is now restored)
+    if (enPassantSquare != -1 && pawnCanCaptureEP(enPassantSquare, static_cast<Colour>(sideToMove ^ 1)))
+        zobristKey ^= Zobrist::enpassant[enPassantSquare % 8];
 
     halfmove = u.halfmove;
     fullmove = u.fullmove;
@@ -246,35 +291,55 @@ void Board::unmakeMove(Move& m, Undo& u) {
     if (m.promotionPiece != -1) {
         bitboards[m.promotionPiece] &= ~toBB;
         bitboards[m.movedPiece] |= fromBB;
+        zobristKey ^= Zobrist::piece[m.promotionPiece][m.to];
+        zobristKey ^= Zobrist::piece[m.movedPiece][m.from];
     } else {
         bitboards[m.movedPiece] &= ~toBB;
         bitboards[m.movedPiece] |= fromBB;
+        zobristKey ^= Zobrist::piece[m.movedPiece][m.to];
+        zobristKey ^= Zobrist::piece[m.movedPiece][m.from];
     }
 
-    // Undo castling rook move
+    // Undo castling rook
     if (m.isCastling) {
-        if (m.to == 6) { // WK
+        if (m.to == 6) {
             bitboards[WR] &= ~(1ULL << 5);
-            bitboards[WR] |= (1ULL << 7);
+            bitboards[WR] |=  (1ULL << 7);
+            zobristKey ^= Zobrist::piece[WR][5];
+            zobristKey ^= Zobrist::piece[WR][7];
         } else if (m.to == 2) {
             bitboards[WR] &= ~(1ULL << 3);
-            bitboards[WR] |= (1ULL << 0);
+            bitboards[WR] |=  (1ULL << 0);
+            zobristKey ^= Zobrist::piece[WR][3];
+            zobristKey ^= Zobrist::piece[WR][0];
         } else if (m.to == 62) {
             bitboards[BR] &= ~(1ULL << 61);
-            bitboards[BR] |= (1ULL << 63);
+            bitboards[BR] |=  (1ULL << 63);
+            zobristKey ^= Zobrist::piece[BR][61];
+            zobristKey ^= Zobrist::piece[BR][63];
         } else if (m.to == 58) {
             bitboards[BR] &= ~(1ULL << 59);
-            bitboards[BR] |= (1ULL << 56);
+            bitboards[BR] |=  (1ULL << 56);
+            zobristKey ^= Zobrist::piece[BR][59];
+            zobristKey ^= Zobrist::piece[BR][56];
         }
     }
 
     // Restore captured piece
     if (u.capturedPiece != -1) {
         bitboards[u.capturedPiece] |= (1ULL << u.capturedSquare);
+        zobristKey ^= Zobrist::piece[u.capturedPiece][u.capturedSquare];
     }
 
+    // Restore castling rights
+    zobristKey ^= Zobrist::castling[castlingRights];
     castlingRights = u.castlingRights;
+    zobristKey ^= Zobrist::castling[castlingRights];
+
+    // Restore EP square and hash it if a pawn could capture it
     enPassantSquare = u.enPassantSquare;
+    if (enPassantSquare != -1 && pawnCanCaptureEP(enPassantSquare, sideToMove))
+        zobristKey ^= Zobrist::enpassant[enPassantSquare % 8];
 
     updateOccupancy();
 }
@@ -362,8 +427,10 @@ uint64_t Board::perft(int depth) {
     for (auto m : moves) {
         Undo u;
         makeMove(m, u);
+        assert(zobristKey == computeZobrist());
         nodes += perft(depth - 1);
         unmakeMove(m, u);
+        assert(zobristKey == computeZobrist());
     }
     return nodes;
 }
@@ -464,7 +531,6 @@ void Board::printBitboard(uint64_t bb) const {
 }
 
 // Util Functions
-
 void Board::updateOccupancy() {
 
     // White Pieces
@@ -477,6 +543,48 @@ void Board::updateOccupancy() {
     // Occupancy
     occupancy = blackPieces | whitePieces;
 
+}
+
+uint64_t Board::computeZobrist() {
+
+    // Remember ^= is the bitwise XOR
+    /* That means:
+            If you XOR something in → it’s added
+            If you XOR the same thing again → it’s removed
+    */
+
+    uint64_t key = 0;
+
+    for (int i = 0; i < 12; i++) {
+        uint64_t pieces = bitboards[i];
+
+        while (pieces) {
+            int pieceSq = __builtin_ctzll(pieces); 
+            key ^= Zobrist::piece[i][pieceSq];
+            pieces &= pieces - 1;
+        }
+    }
+
+    key ^= Zobrist::castling[castlingRights];
+
+    if (enPassantSquare != -1) {
+        if (pawnCanCaptureEP(enPassantSquare, sideToMove)) {
+            int file = enPassantSquare % 8; // % 8 finds the file of given square 
+            key ^= Zobrist::enpassant[file]; 
+        }
+    }
+
+    if (sideToMove == BLACK) 
+        key ^= Zobrist::side;
+
+    return key;
+}
+
+bool Board::pawnCanCaptureEP(int epSquare, Colour stm) {
+    // Attackers of EP square from the opposite side
+    int pawn = (stm == WHITE) ? WP : BP;
+    uint64_t attackers = bitboards[pawn] & pawnAttacks[stm^1][epSquare]; // inverted to find pawns that can attack epSquare
+    return attackers != 0;
 }
 
 int Board::charToPiece(char c) {

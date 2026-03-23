@@ -1,6 +1,7 @@
 #include "engine/engine.h"
 #include "search/search.h"
 #include "game/attacks/attacks.h"
+#include "game/board/zobrist.h"
 
 #include <sstream>
 
@@ -8,6 +9,7 @@ using namespace std;
 
 Engine::Engine() {
     initAttacks();
+    Zobrist::init();
     board = Board(startPos);
 }
 

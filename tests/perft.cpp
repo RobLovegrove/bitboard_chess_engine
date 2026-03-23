@@ -5,6 +5,7 @@
 #include "../src/game/attacks/attacks.h"
 #include "../src/game/board/board.h"
 #include "../src/search/search.h"
+#include "../src/game/board/zobrist.h"
 
 using namespace std;
 
@@ -18,6 +19,7 @@ int main() {
 
     // Initialise attack look up tables
     initAttacks();
+    Zobrist::init();
 
     // -----------------------------
     // Initialize boards

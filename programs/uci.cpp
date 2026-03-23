@@ -40,23 +40,24 @@ int main() {
 
         Colour sideToMove = engine.getSideToMove();
 
-        string move;
+        string moveStr;
 
         if (sideToMove == playersColour) {
 
             engine.printBoard();
             cout << "It is your move! ";
-            cin >> move;
-            if (move == "quit" || move == "q") break;
+            cin >> moveStr;
+            if (moveStr == "quit" || moveStr == "q") break;
         }
         else {
-            move = engine.searchBestMove(depth);
+            Move move = engine.searchBestMove(depth);
+            moveStr = moveToLAN(move);
         }
 
         try {
-            engine.makeMove(move);
+            engine.makeMove(moveStr);
             if (sideToMove != playersColour) { 
-                cout << "Your opponent has made their move - " << move << endl;
+                cout << "Your opponent has made their move - " << moveStr << endl;
             }
         }
         catch (const runtime_error& e) {
