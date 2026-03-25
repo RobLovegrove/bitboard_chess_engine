@@ -1,7 +1,7 @@
 #include "pst.h"
 #include "evaluation.h"
 
-const int mgTablesWhite[6][64] = { 
+const int mgTablesBlack[6][64] = { 
      // Pawn MG
      {
           0,  0,  0,  0,  0,  0,  0,  0,
@@ -69,7 +69,7 @@ const int mgTablesWhite[6][64] = {
           20, 30, 10,  0,  0, 10, 30, 20
      }
 };
-const int egTablesWhite[6][64] = { 
+const int egTablesBlack[6][64] = { 
      // Pawn EG
      {
           0,  0,  0,  0,  0,  0,  0,  0,
@@ -111,14 +111,14 @@ const int egTablesWhite[6][64] = {
      }
 };
 
-int mgTablesBlack[6][64];
-int egTablesBlack[6][64];
+int mgTablesWhite[6][64];
+int egTablesWhite[6][64];
 
 void initPST() {
     for (int sq = 0; sq < 64; sq++) {
         for (int p = 0; p < 6; p++) {
-            mgTablesBlack[p][sq] = mgTablesWhite[p][mirror(sq)];
-            egTablesBlack[p][sq] = egTablesWhite[p][mirror(sq)];
+            mgTablesWhite[p][sq] = mgTablesWhite[p][mirror(sq)];
+            egTablesWhite[p][sq] = egTablesWhite[p][mirror(sq)];
         }
     }
 }
