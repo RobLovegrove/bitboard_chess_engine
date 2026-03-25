@@ -34,7 +34,7 @@ string gitCommitHash() {
 
 int main() {
     Engine engine;
-    vector<int> depths = {2, 4, 6};
+    vector<int> depths = {2, 4, 6, 8};
 
     ifstream file("programs/positions.txt");
     if (!file.is_open()) {
@@ -90,10 +90,10 @@ int main() {
             expectedMoves.push_back(tokens[i]);
         }
 
-        engine.newGameWithFEN(fenPart);
         totalPositions++;
 
         for (int maxDepth : depths) {
+            engine.newGameWithFEN(fenPart);
             engine.resetNodes();
             auto start = chrono::high_resolution_clock::now();
             Move bestMove = engine.searchBestMove(maxDepth);

@@ -22,10 +22,12 @@ Engine::Engine() : tt(1 << 20) {
 
 void Engine::newGame() {
     board = Board(startPos);
+    tt.clear();
 }
 
 void Engine::newGameWithFEN(const string& fen) {
     board = Board(fen);
+    tt.clear();
 }
 
 int Engine::charToPiece(char c) {
