@@ -1,4 +1,5 @@
 #include "evaluation.h"
+#include "pst.h"
 
 
 const int pieceValue[12] = {
@@ -6,116 +7,13 @@ const int pieceValue[12] = {
     100, 500, 320, 330, 900, 20000  // black
 };
 
-const int pawnTableMG[64] = {
-     0,  0,  0,  0,  0,  0,  0,  0,
-     5, 10, 10,-20,-20, 10, 10,  5,
-     5, -5,-10,  0,  0,-10, -5,  5,
-     0,  0,  0, 20, 20,  0,  0,  0,
-     5,  5, 10, 25, 25, 10,  5,  5,
-    10, 10, 20, 30, 30, 20, 10, 10,
-    50, 50, 50, 50, 50, 50, 50, 50,
-     0,  0,  0,  0,  0,  0,  0,  0
-};
-
-const int pawnTableEG[64] = {
-     0,  0,  0,  0,  0,  0,  0,  0,
-    60, 60, 60, 60, 60, 60, 60, 60,
-    50, 50, 50, 50, 50, 50, 50, 50,
-    40, 40, 40, 40, 40, 40, 40, 40,
-    30, 30, 30, 30, 30, 30, 30, 30,
-    20, 20, 20, 20, 20, 20, 20, 20,
-    10, 10, 10, 10, 10, 10, 10, 10,
-     0,  0,  0,  0,  0,  0,  0,  0
-};
-
-const int knightTable[64] = {
-    -50,-40,-30,-30,-30,-30,-40,-50,
-    -40,-20,  0,  0,  0,  0,-20,-40,
-    -30,  0, 10, 15, 15, 10,  0,-30,
-    -30,  5, 15, 20, 20, 15,  5,-30,
-    -30,  0, 15, 20, 20, 15,  0,-30,
-    -30,  5, 10, 15, 15, 10,  5,-30,
-    -40,-20,  0,  5,  5,  0,-20,-40,
-    -50,-40,-30,-30,-30,-30,-40,-50
-};
-
-const int bishopTable[64] = {
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -10,  0,  5, 10, 10,  5,  0,-10,
-    -10,  5,  5, 10, 10,  5,  5,-10,
-    -10,  0, 10, 10, 10, 10,  0,-10,
-    -10, 10, 10, 10, 10, 10, 10,-10,
-    -10,  5,  0,  0,  0,  0,  5,-10,
-    -20,-10,-10,-10,-10,-10,-10,-20
-};
-
-const int rookTableMG[64] = {
-     0,  0,  0,  0,  0,  0,  0,  0,
-     5, 10, 10, 10, 10, 10, 10,  5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-     0,  0,  0,  5,  5,  0,  0,  0
-};
-
-const int rookTableEG[64] = {
-     0,   0,   5,  10,  10,   5,   0,   0,
-    25,  25,  25,  25,  25,  25,  25,  25,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,   0,   5,   5,   0,   0,   0
-};
-
-const int queenTable[64] = {
-    -20,-10,-10, -5, -5,-10,-10,-20,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -10,  0,  5,  5,  5,  5,  0,-10,
-     -5,  0,  5,  5,  5,  5,  0, -5,
-      0,  0,  5,  5,  5,  5,  0, -5,
-    -10,  5,  5,  5,  5,  5,  0,-10,
-    -10,  0,  5,  0,  0,  0,  0,-10,
-    -20,-10,-10, -5, -5,-10,-10,-20
-};
-
-const int kingTableMG[64] = {
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -20,-30,-30,-40,-40,-30,-30,-20,
-    -10,-20,-20,-20,-20,-20,-20,-10,
-     20, 20,  0,  0,  0,  0, 20, 20,
-     20, 30, 10,  0,  0, 10, 30, 20
-};
-
-const int kingTableEG[64] = {
-     0,  5, 10, 15, 15, 10,  5,  0,
-     5, 10, 15, 20, 20, 15, 10,  5,
-    10, 15, 20, 25, 25, 20, 15, 10,
-    15, 20, 25, 30, 30, 25, 20, 15,
-    15, 20, 25, 30, 30, 25, 20, 15,
-    10, 15, 20, 25, 25, 20, 15, 10,
-     5, 10, 15, 20, 20, 15, 10,  5,
-     0,  5, 10, 15, 15, 10,  5,  0
-};
-
-const int zeroTable[64] = {0};
-
-const int* mgTables[6] = { pawnTableMG, rookTableMG, knightTable, bishopTable, queenTable, kingTableMG };
-const int* egTables[6] = { pawnTableEG, rookTableEG, zeroTable, zeroTable, zeroTable, kingTableEG };
 
 int evaluate(Board& board) {
 
     const uint64_t* bb = board.getAllBitboards();
+    int phase = calculateGamePhase(bb);
 
     int score = material(bb);
-    float phase = calculateGamePhase(bb);
     score += pieceSquares(bb, phase);
 
     Colour stm = board.getSideToMove();
@@ -140,8 +38,6 @@ int material(const uint64_t* bb) {
     return score;
 }
 
-int mirror(int sq) { return sq ^ 56; } // flips rank of pieceTables
-
 int calculateGamePhase(const uint64_t* bb) {
 
     // Calculate game phase
@@ -150,36 +46,50 @@ int calculateGamePhase(const uint64_t* bb) {
     phase += 2 * (__builtin_popcountll(bb[WR]) + __builtin_popcountll(bb[BR])); // rooks
     phase += 4 * (__builtin_popcountll(bb[WQ]) + __builtin_popcountll(bb[BQ])); // queens
 
-    float gamePhase = phase / (float)TOTAL_PHASE;  // normalize 0..1
-
-    return gamePhase;
+    return phase;
 }
 
-int pieceSquares(const uint64_t* bb, float gamePhase) {
-
-    int score = 0;
+int pieceSquares(const uint64_t* bb, int phase) {
 
     // enum PieceType {
     //     WP, WR, WN, WB, WQ, WK, BP, BR, BN, BB, BQ, BK,
     //     EMPTY = -1
     // };
 
-    for (int i = 0; i < 12; i++) {
+    int mgScore = 0;
+    int egScore = 0;
+
+    for (int i = WP; i <= WK; i++) {
         uint64_t pieces = bb[i];
-        bool isWhite = i < 6;
-        int type = i % 6; // 0 = P, 1 = R, 2 = N, 3 = B, 4 = Q, 5 = K
 
-        while(pieces) {
+        while (pieces) {
             int sq = __builtin_ctzll(pieces);
-            pieces &= pieces - 1;     
-            
-            int tableScore = isWhite ? mgTables[type][sq]*gamePhase + egTables[type][sq]*(1-gamePhase)
-                     : mgTables[type][mirror(sq)]*gamePhase + egTables[type][mirror(sq)]*(1-gamePhase);
+            pieces &= pieces - 1; 
 
-            score += isWhite ? tableScore : -tableScore;
+            int mg = mgTablesWhite[i][sq];
+            int eg = egTablesWhite[i][sq];
+
+            mgScore += mg;
+            egScore += eg;
+        }
+    }
+
+    for (int i = BP; i <= BK; i++) {
+        uint64_t pieces = bb[i];
+
+        while (pieces) {
+            int sq = __builtin_ctzll(pieces);
+            pieces &= pieces - 1; 
+
+            int mg = mgTablesBlack[i-6][sq];
+            int eg = egTablesBlack[i-6][sq];
+
+            mgScore -= mg;
+            egScore -= eg;
         }
 
     }
 
-    return score;
+    return (mgScore * phase + egScore * (TOTAL_PHASE - phase)) / TOTAL_PHASE; // Normalise at end here
+
 }

@@ -3,6 +3,7 @@
 #include "../game/attacks/attacks.h"
 #include "../game/board/zobrist.h"
 #include "../search/tt.h"
+#include "../eval/pst.h"
 
 #include <sstream>
 
@@ -15,6 +16,9 @@ Engine::Engine() : tt(1 << 20) {
 
     // Initilaise the zobrist hasing
     Zobrist::init();
+
+    // Initilaise the piece square tables for evaluator
+    initPST();
 
     // Initilalise the board
     board = Board(startPos);
