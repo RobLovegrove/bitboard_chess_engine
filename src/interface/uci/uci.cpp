@@ -69,7 +69,7 @@ void uciLoop() {
             }
         }
         else if (cmd == "go") {
-            int depth = 4;
+            int depth = 6;
             string token;
 
             while (iss >> token) {

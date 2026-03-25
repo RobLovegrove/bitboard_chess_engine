@@ -13,7 +13,7 @@ int main() {
     //engine.newGameWithFEN("k7/8/1K5R/8/8/8/8/8 w - - 28 82");
     engine.newGame();
 
-    int depth = 4;
+    int depth = 6;
 
     string sideString;
     cout << "Would you like to play as WHITE (w) or BLACK (b)? ";
