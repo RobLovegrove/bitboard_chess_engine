@@ -2,6 +2,7 @@
 
 #include <string>
 #include "../game/board/board.h"
+#include "../search/tt.h"
 
 class Engine {
 public:
@@ -40,6 +41,8 @@ public:
 private:
     Board board;
     bool stop = false;
+
+    TranspositionTable tt;
 
     uint64_t nodes = 0;
 

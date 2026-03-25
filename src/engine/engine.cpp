@@ -1,15 +1,22 @@
-#include "engine/engine.h"
-#include "search/search.h"
-#include "game/attacks/attacks.h"
-#include "game/board/zobrist.h"
+#include "./engine.h"
+#include "../search/search.h"
+#include "../game/attacks/attacks.h"
+#include "../game/board/zobrist.h"
+#include "../search/tt.h"
 
 #include <sstream>
 
 using namespace std;
 
-Engine::Engine() {
+Engine::Engine() : tt(1 << 20) {
+
+    // Initilaise the attack masks
     initAttacks();
+
+    // Initilaise the zobrist hasing
     Zobrist::init();
+
+    // Initilalise the board
     board = Board(startPos);
 }
 
@@ -107,7 +114,7 @@ Move Engine::searchBestMove(int maxDepth) {
 
     for (int depth = 1; depth <= maxDepth; depth++) {
         if (stop && depth > 1) break;
-        Move currentBest = findBestMove(board, depth, bestMove, nodes, stop);
+        Move currentBest = findBestMove(board, tt, depth, bestMove, nodes, stop);
         if (!currentBest.isNull()) bestMove = currentBest;
     }
 

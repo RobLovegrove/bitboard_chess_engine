@@ -77,6 +77,7 @@ class Board {
     int getEnPassantSquare() const { return enPassantSquare; }
     uint8_t getCastlingRights() const { return castlingRights; }
     PieceType getPieceOnSquare(int sq);
+    uint64_t getZobristKey() const { return zobristKey; }
 
     // SETTERS
     void setEnPassantSquare(int ePS) {enPassantSquare = ePS; } 
