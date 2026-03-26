@@ -107,6 +107,17 @@ void Engine::makeMove(const string& moveStr) {
     throw runtime_error("Illegal move by " + colour + ": " + moveStr);
 }
 
+bool Engine::isLegalMove(std::string moveStr) {
+    vector<Move> legalMoves = board.generateLegalMoves();
+    Move move;
+
+    if (!parseMove(moveStr, move.from, move.to, move.promotionPiece)) {
+        throw runtime_error("Invalid input: " + moveStr);
+    }
+
+    return board.isLegalMove(move, legalMoves);
+}
+
 void Engine::makeMove(Move& move) {
     Undo u;
     board.makeMove(move, u);

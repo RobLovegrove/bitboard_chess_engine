@@ -21,6 +21,8 @@ public:
 
     bool isGameOver(std::string& result); 
 
+    bool isLegalMove(std::string moveString);
+
     void printBoard() { board.printBoard(); }
     std::string printBoardToString() { return board.printBoardToString(); }
 
