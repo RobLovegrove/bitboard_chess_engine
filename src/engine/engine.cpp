@@ -4,6 +4,7 @@
 #include "../game/board/zobrist.h"
 #include "../search/tt.h"
 #include "../eval/pst.h"
+#include "../eval/pawnStructure.h"
 
 #include <sstream>
 
@@ -19,6 +20,9 @@ Engine::Engine() : tt(1 << 20) {
 
     // Initilaise the piece square tables for evaluator
     initPST();
+
+    // Initialise pawnMasks for evaluator
+    initPawnMasks();
 
     // Initilalise the board
     board = Board(startPos);

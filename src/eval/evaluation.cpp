@@ -1,5 +1,6 @@
 #include "evaluation.h"
 #include "pst.h"
+#include "pawnStructure.h"
 
 
 const int pieceValue[12] = {
@@ -15,6 +16,7 @@ int evaluate(Board& board) {
 
     int score = material(bb);
     score += pieceSquares(bb, phase);
+    score += pawnStructure(bb);
 
     Colour stm = board.getSideToMove();
     return stm == WHITE ? score : -score;
