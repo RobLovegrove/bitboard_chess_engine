@@ -33,6 +33,18 @@ int negamax(Board& board, TranspositionTable& tt,
 
     if (depth == 0) return quiescence(board, tt, alpha, beta, ply+1, nodes, stop);
 
+    // Null move pruning
+    if (depth >= 3 && !board.isKingInCheck(board.getSideToMove())) {
+        Undo u;
+        board.makeNullMove(u);
+        int R = 2; // Depth reduction
+        int score = -negamax(
+                board, tt, depth - 1 - R, -beta, -beta + 1, ply+1, nodes, stop);
+        board.unmakeNullMove(u);
+
+        if (score >= beta) return score; // Fail-soft
+    }
+
     vector<Move> moves = board.generateLegalMoves();
 
     Move ttMove = Move::null();

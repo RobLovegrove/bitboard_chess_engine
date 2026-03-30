@@ -344,6 +344,39 @@ void Board::unmakeMove(Move& m, Undo& u) {
     updateOccupancy();
 }
 
+void Board::makeNullMove(Undo& u) {
+    // Save state
+    u.halfmove = halfmove;
+    u.fullmove = fullmove;
+    u.enPassantSquare = enPassantSquare;
+    u.castlingRights = castlingRights;
+
+    // Null move resets en passant and increments ply
+    enPassantSquare = -1;
+    halfmove++;   // like a normal move
+    ply++;
+
+    // Swap side to move
+    sideToMove = static_cast<Colour>(sideToMove ^ 1);
+    zobristKey ^= Zobrist::side;  // update hash for side to move
+
+}
+
+void Board::unmakeNullMove(Undo& u) {
+    sideToMove = static_cast<Colour>(sideToMove ^ 1);
+    zobristKey ^= Zobrist::side;
+
+    halfmove = u.halfmove;
+    fullmove = u.fullmove;
+    enPassantSquare = u.enPassantSquare;
+    castlingRights = u.castlingRights;
+
+    ply--;
+}
+
+
+
+
 bool Board::isLegalMove(Move& move, vector<Move>& moves) {
 
     for (auto m : moves) {

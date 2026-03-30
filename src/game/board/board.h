@@ -57,6 +57,9 @@ class Board {
     void makeMove(Move& m, Undo& u);
     void unmakeMove(Move& m, Undo& u);
 
+    void makeNullMove(Undo& u); // For null move pruning
+    void unmakeNullMove(Undo& u);
+
     bool isLegalMove(Move& m, std::vector<Move>& moves);
     bool isSquareAttacked(int square, Colour bySide);
     bool isKingInCheck(Colour sideToMove);
