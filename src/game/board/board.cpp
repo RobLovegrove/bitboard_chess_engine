@@ -345,37 +345,38 @@ void Board::unmakeMove(Move& m, Undo& u) {
 }
 
 void Board::makeNullMove(Undo& u) {
-    // Save state
     u.halfmove = halfmove;
     u.fullmove = fullmove;
     u.enPassantSquare = enPassantSquare;
     u.castlingRights = castlingRights;
 
-    // Null move resets en passant and increments ply
+    // Remove EP from hash if it exists
+    if (enPassantSquare != -1 && pawnCanCaptureEP(enPassantSquare, sideToMove))
+        zobristKey ^= Zobrist::enpassant[enPassantSquare % 8];
+
     enPassantSquare = -1;
-    halfmove++;   // like a normal move
+    halfmove++;
     ply++;
 
-    // Swap side to move
     sideToMove = static_cast<Colour>(sideToMove ^ 1);
-    zobristKey ^= Zobrist::side;  // update hash for side to move
-
+    zobristKey ^= Zobrist::side;
 }
 
 void Board::unmakeNullMove(Undo& u) {
+    // Restore side first
     sideToMove = static_cast<Colour>(sideToMove ^ 1);
     zobristKey ^= Zobrist::side;
 
+    // Restore EP square and hash if needed
+    enPassantSquare = u.enPassantSquare;
+    if (enPassantSquare != -1 && pawnCanCaptureEP(enPassantSquare, sideToMove))
+        zobristKey ^= Zobrist::enpassant[enPassantSquare % 8];
+
     halfmove = u.halfmove;
     fullmove = u.fullmove;
-    enPassantSquare = u.enPassantSquare;
     castlingRights = u.castlingRights;
-
     ply--;
 }
-
-
-
 
 bool Board::isLegalMove(Move& move, vector<Move>& moves) {
 

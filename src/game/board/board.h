@@ -82,6 +82,8 @@ class Board {
     PieceType getPieceOnSquare(int sq);
     uint64_t getZobristKey() const { return zobristKey; }
 
+    uint64_t computeZobrist();
+
     // SETTERS
     void setEnPassantSquare(int ePS) {enPassantSquare = ePS; } 
 
@@ -100,7 +102,6 @@ class Board {
 
     void updateOccupancy();
     int charToPiece(char c);
-    uint64_t computeZobrist();
 
     bool pawnCanCaptureEP(int epSquare, Colour side);
 

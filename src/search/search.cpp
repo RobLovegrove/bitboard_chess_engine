@@ -1,6 +1,7 @@
 #include "search.h"
 #include "../eval/evaluation.h"
 #include "tt.h"
+#include "../game/board/zobrist.h"
 
 using namespace std;
 
@@ -80,6 +81,14 @@ int negamax(Board& board, TranspositionTable& tt,
         board.makeMove(m, u);
         int score = -negamax(board, tt, depth - 1, -beta, -alpha, ply+1, nodes, stop);
         board.unmakeMove(m, u);
+
+        // ADD THIS
+        uint64_t zk = board.getZobristKey();
+        uint64_t recomputed = board.computeZobrist();
+        if (zk != recomputed) {
+            cout << "ZOBRIST CORRUPTION IN SEARCH" << endl;
+            exit(1);
+        }
 
         if (score > bestScore) {
             bestScore = score;
