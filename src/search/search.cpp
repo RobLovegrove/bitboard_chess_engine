@@ -33,13 +33,17 @@ int negamax(Board& board, TranspositionTable& tt,
 
     if (depth == 0) return quiescence(board, tt, alpha, beta, ply+1, nodes, stop);
 
+    bool inCheck = board.isKingInCheck(board.getSideToMove());
+
     // Null move pruning
-    if (depth >= 3 && !board.isKingInCheck(board.getSideToMove())) {
+    if (depth >= 3 && !inCheck) {
         Undo u;
         board.makeNullMove(u);
-        int R = 2; // Depth reduction
+        int R = 2 + depth / 4; // Adaptive depth reduction
+        int newDepth = depth - 1 - R;
+        if (newDepth < 0) newDepth = 0;
         int score = -negamax(
-                board, tt, depth - 1 - R, -beta, -beta + 1, ply+1, nodes, stop);
+                board, tt, newDepth, -beta, -beta + 1, ply+1, nodes, stop);
         board.unmakeNullMove(u);
 
         if (score >= beta) return score; // Fail-soft
@@ -53,7 +57,7 @@ int negamax(Board& board, TranspositionTable& tt,
     }
 
     if (moves.empty())
-        return board.isKingInCheck(board.getSideToMove()) ? -MATE_SCORE + ply : 0;
+        return inCheck ? -MATE_SCORE + ply : 0;
 
     // Put best move from TT as first move
     if (!ttMove.isNull()) {
