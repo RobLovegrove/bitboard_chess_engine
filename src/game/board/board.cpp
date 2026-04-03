@@ -173,6 +173,15 @@ bool Board::isKingInCheck(Colour stm) {
     return isSquareAttacked(kingSq, static_cast<Colour>(stm^1));
 }
 
+bool Board::moveGivesCheck(Move m) {
+    Undo u;
+    makeMove(m, u);
+    bool givesCheck = isKingInCheck(sideToMove);
+    unmakeMove(m, u);
+
+    return givesCheck;
+}
+
 void Board::makeMove(Move& m, Undo& u) {
 
     u.halfmove = halfmove;

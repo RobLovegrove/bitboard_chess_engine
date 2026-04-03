@@ -63,6 +63,7 @@ class Board {
     bool isLegalMove(Move& m, std::vector<Move>& moves);
     bool isSquareAttacked(int square, Colour bySide);
     bool isKingInCheck(Colour sideToMove);
+    bool moveGivesCheck(Move move);
 
     uint64_t perft(int depth);  
 

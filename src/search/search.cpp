@@ -86,6 +86,7 @@ int negamax(Board& board, TranspositionTable& tt,
 
         bool isCapture  = m.capturedPiece != -1;
         bool isKiller   = (m == killerMoves[ply][0] || m == killerMoves[ply][1]);
+        bool givesCheck = board.moveGivesCheck(m);
 
         Undo u;
         board.makeMove(m, u);
@@ -99,7 +100,8 @@ int negamax(Board& board, TranspositionTable& tt,
             && m.promotionPiece == -1
             && !inCheck
             && !pvNode
-            && history[m.movedPiece][m.to] < 5000)
+            && history[m.movedPiece][m.to] < 5000
+            && !givesCheck)
         {
             // Adaptive reduction
             int R = 1 + (int)(log(depth) * log(i + 1) / 2.0);
@@ -206,7 +208,7 @@ Move findBestMove(Board& board, TranspositionTable& tt,
         if (i == 0) {
             score = -negamax(board, tt, depth - 1, -beta, -alpha, 1, nodes, true, stop);
         } else {
-            // PVS at root
+            //PVS at root
             score = -negamax(board, tt, depth - 1, -alpha - 1, -alpha, 1, nodes, true, stop);
             if (score > alpha && score < beta) {
                 score = -negamax(board, tt, depth - 1, -beta, -alpha, 1, nodes, true, stop);
