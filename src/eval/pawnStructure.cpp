@@ -72,7 +72,7 @@ int pawnStructure(const uint64_t* bb) {
 
         // Isolated pawns
         if ((adjacentFileMasks[file] & whitePawns) == 0) {
-            score += 15;
+            score -= 15;
         }
 
         // Doubled pawns
@@ -91,12 +91,12 @@ int pawnStructure(const uint64_t* bb) {
 
         // Passed pawns
         if ((passedPawnMasks[BLACK][sq] & whitePawns) == 0) {
-            score -= rank * 10;
+            score -= (7 - rank) * 10;
         }
 
         // Isolated pawns
         if ((adjacentFileMasks[file] & blackPawns) == 0) {
-            score -= 15;
+            score += 15;
         }
 
         // Doubled pawns

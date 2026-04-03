@@ -801,6 +801,16 @@ string Board::moveToBK(Move& m) {
         default: break; // pawns
     }
 
+    if (m.capturedPiece != -1) {
+        if (m.movedPiece != WP && m.movedPiece != BP) s += "x";
+        else {
+            // Origin square
+            int file = m.from % 8;
+            s += char('a' + file);
+            s += "x";
+        }
+    };
+
     // Destination square
     int file = m.to % 8;
     int rank = m.to / 8;

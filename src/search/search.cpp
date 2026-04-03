@@ -12,12 +12,14 @@ Move killerMoves[MAX_DEPTH][2] = {};
 int history[12][64] = {};
 
 int negamax(Board& board, TranspositionTable& tt, 
-        int depth, int alpha, int beta, int ply, uint64_t& nodes, bool& stop) {
+        int depth, int alpha, int beta, int ply, uint64_t& nodes, bool nullAllowed, bool& stop) {
 
     if (stop) return 0;
     nodes++; 
 
     int originalAlpha = alpha;
+    bool pvNode = (beta - alpha) > 1; // Principal variation node
+
 
     // TT probe
     TTEntry* entry = tt.probe(board.getZobristKey());
@@ -37,17 +39,21 @@ int negamax(Board& board, TranspositionTable& tt,
     bool inCheck = board.isKingInCheck(board.getSideToMove());
 
     // Null move pruning
-    if (depth >= 3 && !inCheck) {
+    if (depth >= 3 && !inCheck && nullAllowed) {
         Undo u;
         board.makeNullMove(u);
         int R = 2 + depth / 4; // Adaptive depth reduction
         int newDepth = depth - 1 - R;
         if (newDepth < 0) newDepth = 0;
-        int score = -negamax(
-                board, tt, newDepth, -beta, -beta + 1, ply+1, nodes, stop);
+        int nullScore = -negamax(
+                board, tt, newDepth, -beta, -beta + 1, ply+1, nodes, false, stop);
         board.unmakeNullMove(u);
 
-        if (score >= beta) return score; // Fail-soft
+        if (nullScore >= beta) {
+            int verifyDepth = max(depth / 2, 3);
+            int verified = negamax(board, tt, verifyDepth, alpha, beta, ply, nodes, false, stop);
+            if (verified >= beta) return verified;
+        }
     }
 
     vector<Move> moves = board.generateLegalMoves();
@@ -75,20 +81,50 @@ int negamax(Board& board, TranspositionTable& tt,
     Move bestMove = Move::null();
     int bestScore = -INF;
 
-    for (Move& m : moves) {
+    for (int i = 0; i < (int)moves.size(); i++) {
+        Move& m = moves[i];
+
+        bool isCapture  = m.capturedPiece != -1;
+        bool isKiller   = (m == killerMoves[ply][0] || m == killerMoves[ply][1]);
 
         Undo u;
         board.makeMove(m, u);
-        int score = -negamax(board, tt, depth - 1, -beta, -alpha, ply+1, nodes, stop);
-        board.unmakeMove(m, u);
 
-        // ADD THIS
-        uint64_t zk = board.getZobristKey();
-        uint64_t recomputed = board.computeZobrist();
-        if (zk != recomputed) {
-            cout << "ZOBRIST CORRUPTION IN SEARCH" << endl;
-            exit(1);
+        int score;
+
+        if (i >= 4
+            && depth >= 3
+            && !isCapture
+            && !isKiller
+            && m.promotionPiece == -1
+            && !inCheck
+            && !pvNode
+            && history[m.movedPiece][m.to] < 5000)
+        {
+            // Adaptive reduction
+            int R = 1 + (int)(log(depth) * log(i + 1) / 2.0);
+            R = min(R, depth / 3);
+
+            // Reduced null window search
+            score = -negamax(board, tt, depth - 1 - R, -alpha - 1, -alpha, ply+1, nodes, true, stop);
+
+            // Surprise — re-search at full depth, full window
+            if (score > alpha)
+                score = -negamax(board, tt, depth - 1, -beta, -alpha, ply+1, nodes, true, stop);
         }
+        else if (i > 0) {
+            // PVS null window search for non-LMR moves after the first
+            score = -negamax(board, tt, depth - 1, -alpha - 1, -alpha, ply+1, nodes, true, stop);
+            if (score >= alpha && score < beta) {
+                score = -negamax(board, tt, depth - 1, -beta, -alpha, ply+1, nodes, true, stop);
+            }
+        }
+        else {
+            // First move: full window
+            score = -negamax(board, tt, depth - 1, -beta, -alpha, ply+1, nodes, true, stop);
+        }
+
+        board.unmakeMove(m, u);
 
         if (score > bestScore) {
             bestScore = score;
@@ -128,8 +164,8 @@ Move findBestMove(Board& board, TranspositionTable& tt,
         return Move::null();
      }
 
-
     TTEntry* entry = tt.probe(board.getZobristKey());
+
     int startIdx = 0;
 
     // 1. prevBest first
@@ -159,23 +195,36 @@ Move findBestMove(Board& board, TranspositionTable& tt,
     int alpha = -INF;
     int beta = INF;
 
-    for (Move& m : moves) {
-
+    for (int i = 0; i < (int)moves.size(); i++) {
+        Move& m = moves[i];
         Undo u; 
         if (stop) return bestMove;
 
         board.makeMove(m, u);
+        int score;
 
-        int score = -negamax(board, tt, depth - 1, -beta, -alpha, 1, nodes, stop);
+        if (i == 0) {
+            score = -negamax(board, tt, depth - 1, -beta, -alpha, 1, nodes, true, stop);
+        } else {
+            // PVS at root
+            score = -negamax(board, tt, depth - 1, -alpha - 1, -alpha, 1, nodes, true, stop);
+            if (score > alpha && score < beta) {
+                score = -negamax(board, tt, depth - 1, -beta, -alpha, 1, nodes, true, stop);
+            }
+        }
 
         board.unmakeMove(m, u);
 
-        if (score > bestScore || bestMove.isNull()) {
+        if (score > bestScore) {
             bestScore = score;
             bestMove = m;
         }
         if (score > alpha) alpha = score;
     }
+
+    // Store root position in TT
+    tt.store(board.getZobristKey(), depth, bestScore, EXACT, bestMove);
+
     return bestMove;
 }
 

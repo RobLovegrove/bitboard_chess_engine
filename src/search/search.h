@@ -12,7 +12,7 @@ int negamax(Board& board,
             TranspositionTable& tt, 
             int depth, int alpha, 
             int beta, int ply, 
-            uint64_t& nodes, bool& stop);
+            uint64_t& nodes, bool nullAllowed, bool& stop);
 Move findBestMove(Board& board, 
                 TranspositionTable& tt,
                 int depth, Move prevBest, 
